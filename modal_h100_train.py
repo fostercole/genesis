@@ -40,12 +40,17 @@ image = (
         "fla-core==0.5.2",
     )
     .run_commands(
-        "git clone --filter=blob:none --no-checkout https://github.com/Zefan-Cai/Open-Jev.git /opt/open-jev"
+        # torch 2.8.0 pins triton==3.4.0. fla refuses that range on H100 (#640).
+        "pip install --upgrade --no-deps 'triton==3.7.1'"
+        " && git clone --filter=blob:none --no-checkout https://github.com/Zefan-Cai/Open-Jev.git /opt/open-jev"
         " && git -C /opt/open-jev sparse-checkout init --cone"
         " && git -C /opt/open-jev sparse-checkout set jev pyproject.toml README.md LICENSE"
         f" && git -C /opt/open-jev checkout {OPEN_JEV_COMMIT}"
         " && pip install -e /opt/open-jev"
-        " && python -c 'import jev.model, bitsandbytes, fla, torch; assert torch.__version__.startswith(\"2.8.0\"), torch.__version__'"
+        " && python -c 'import jev.model, bitsandbytes, fla, torch, triton; "
+        "assert torch.__version__.startswith(\"2.8.0\"), torch.__version__; "
+        "parts=tuple(int(p) for p in triton.__version__.split(\".\")[:3]); "
+        "assert parts>=(3,7,1), triton.__version__'"
     )
     .env(
         {
