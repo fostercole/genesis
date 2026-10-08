@@ -9,7 +9,7 @@ Prices checked Thu Oct 8, 2026. Training-time hours are estimates. The dollar ca
 
 Locked on Oct 8, 2026. The Air has 16 GB, so local scoring is bf16. Training is QLoRA on a Modal H100, because that is the CUDA stack and the Air does not run it. Pi’s agent is Claude Sonnet 5.5 at $2 / $10 per million tokens. There is no Modal account yet, and the $30 Starter credit is unused. First paid step is creating the account, then the one-hour T4 smoke. The credit pays Modal compute. It does not pay Sonnet or Voyage.
 
-GPU change, same day, and the only change: the training job is a Modal H100, not an L4. A 1–2 hour epoch at about $3.95 per GPU-hour is about $4–12 all-in, under the $20 single-job stop and inside the $30 credit. Gradient checkpointing stays off if the microbatch fits, the microbatch is larger than a checkpointed L4 step would have been, and the effective batch stays 16. Before the 50,000-row launch, estimate dollars from measured tokens per second and do not launch if that estimate is over $20. Every other decision in this plan is unchanged.
+GPU change, same day, and the only change: the training job is a Modal H100, not an L4. A 1–2 hour epoch at about $3.95 per GPU-hour is about $4–12 all-in, under the $29 single-job stop and inside the $30 credit. Gradient checkpointing stays off if the microbatch fits, the microbatch is larger than a checkpointed L4 step would have been, and the effective batch stays 16. Before the 50,000-row launch, estimate dollars from measured tokens per second and do not launch if that estimate is over $29. If the running job approaches $29, stop it. Every other decision in this plan is unchanged.
 
 A Pi package, `pi-cursor-agent`, can log in with a Cursor account and claims to use the subscription. Do not build the study on that. The scatter needs token counts priced at Sonnet’s list price. If a trial returns those counts, label the chart “list price, carried by the Cursor login” and skip the Anthropic bill. If it does not return counts, use an Anthropic key and the $25 cap.
 
@@ -38,7 +38,7 @@ The 27B general Jev is not in this plan. It needs an 80 GB GPU, and the 2B befor
 
 **The Pi loop runs the 2B on the same machine as Pi.** Qwen3.5-2B in bf16 is about 4 GB of weights, plus a small LoRA. A 16 GB M1 Air can score a short list locally. An 8 GB Air is tight, because macOS already uses several of those gigabytes, so that machine wants a 4-bit copy for inference. The Open-Jev server listens on localhost. The extension calls that, then `setActiveTools`. Nothing in the loop needs a hosted GPU.
 
-**The M1 Air does not train this run.** Scoring only stores the weights. Training also stores activations for every token in the sequence, and this checkpoint’s training code is CUDA. BitsAndBytes QLoRA does not run on the Mac. A fanless Air that did fit a batch of one would still take on the order of days for the 50,000-row epoch, and the laptop would be busy the whole time. Modal’s H100 does that epoch in about 1–2 hours, about $4–12 all-in, and the Air stays free for Pi. Before launch, replace that range with a dollars estimate from measured tokens per second, and do not launch if it is over $20.
+**The M1 Air does not train this run.** Scoring only stores the weights. Training also stores activations for every token in the sequence, and this checkpoint’s training code is CUDA. BitsAndBytes QLoRA does not run on the Mac. A fanless Air that did fit a batch of one would still take on the order of days for the 50,000-row epoch, and the laptop would be busy the whole time. Modal’s H100 does that epoch in about 1–2 hours, about $4–12 all-in, and the Air stays free for Pi. Before launch, replace that range with a dollars estimate from measured tokens per second, and do not launch if it is over $29. If the running job approaches $29, stop it.
 
 Baseten is a hosted copy of that same server. It is useful when the laptop cannot load the weights, or when a URL has to stay up after the laptop sleeps. It does not train the model, and it does not change the ToolRet numbers. Skip it for this project. The $8 that line used to cost stays in the cap.
 
@@ -74,7 +74,7 @@ The planned spend is about **$55–$63**, or about **$59–$75** if the second e
 | Failed jobs and a second smoke | Modal | $20 |
 | **Planned total** | | **about $55–$63, or about $59–$75 if the second epoch runs** |
 
-The training job is one H100. The planning range is 1–2 hours, about $4–12 all-in, at $3.95 per GPU-hour before CPU and memory. That range is not permission to launch. Before the 50,000-row job starts, measure tokens per second on this stack and estimate the dollars from that rate. If the estimate is over $20, do not launch. Do not start the full 206,000-row set. The 50,000-row run is the study.
+The training job is one H100. The planning range is 1–2 hours, about $4–12 all-in, at $3.95 per GPU-hour before CPU and memory. That range is not permission to launch. Before the 50,000-row job starts, measure tokens per second on this stack and estimate the dollars from that rate. If the estimate is over $29, do not launch. If the running job approaches $29, stop it. Do not start the full 206,000-row set. The 50,000-row run is the study.
 
 The $30 Modal credit, if the account still has it, comes off the Modal rows. It is not extra permission to train longer.
 
@@ -114,7 +114,7 @@ BM25 is the same first stage for every neural model. The 2B never sees all 43,00
 
 ### 5. Train once
 
-Modal H100, one process, QLoRA on top of the existing adapter, same scalar head. Details are in the training section. Watch dev completeness@5 every few hundred steps. Stop early if it flattens. Save the adapter. Do not launch until a measured tokens-per-second estimate is at or under $20.
+Modal H100, one process, QLoRA on top of the existing adapter, same scalar head. Details are in the training section. Watch dev completeness@5 every few hundred steps. Stop early if it flattens. Save the adapter. Do not launch until a measured tokens-per-second estimate is at or under $29. If the running job approaches $29, stop it.
 
 ### 6. Lock k on dev
 
@@ -150,7 +150,7 @@ Start from the released Open-Jev-2B adapter and scalar head. Keep training both.
 - Learning rate 1e-4 on the adapter, 1e-4 on the scalar head, with a 3% warmup and a linear decay. If the loss spikes in the first 200 steps, drop both to 2e-5 and restart from the original checkpoint. Do not keep training through a spike.
 - Effective batch 16. On the H100, gradient checkpointing is off if the step fits, and the microbatch is larger than a checkpointed L4 step. Accumulation supplies whatever the microbatch does not, so the effective batch stays 16. If the larger microbatch does not fit, turn checkpointing on rather than shrinking the effective batch.
 - Max length 4096. Pack one query and its candidates into one sequence the way the Open-Jev loader already scores a list. If a row does not fit, truncate tool text, and keep every target.
-- One epoch. A second epoch only if dev completeness@5 rose by at least one point over the last fifth of the first epoch, and the Modal ledger for training is still under $30.
+- One epoch. A second epoch only if dev completeness@5 rose by at least one point over the last fifth of the first epoch, and the Modal ledger for training is still under $29.
 - Seed 0. One run. No sweep.
 
 Dev completeness@5 is the early-stopping number. Compute it on the BM25 top 50, not on the easy negatives stored in the file. The stored negatives are what the loss sees. The BM25 list is what the eval sees. Stopping on the easy list will look finished while the real list is still wrong.
@@ -213,7 +213,7 @@ Talk track for the result, filled in after the numbers exist:
 - Ledger above **$40** before the test eval: skip the second epoch, run the test once, continue to Pi.
 - Ledger above **$80** before the Pi loop: run the loop on 10 tasks, not 30, and say so on the scatter.
 - Pi loop above **$25**: stop the loop and plot the finished tasks.
-- Any single Modal job estimated over **$20** before launch: do not launch it. For the 50,000-row H100 train, that estimate is dollars from measured tokens per second, not the 1–2 hour planning range. The full 206,000-row epoch is in this bucket. It does not get run.
+- Any single Modal job estimated over **$29** before launch: do not launch it. For the 50,000-row H100 train, that estimate is dollars from measured tokens per second, not the 1–2 hour planning range. If the running job approaches $29, stop it. The full 206,000-row epoch does not get run.
 - Absolute stop at **$200**.
 
 ## Left out on purpose

@@ -4,3 +4,5 @@ __pycache__/
 hf-cache/
 .modal/
 data/*.jsonl.tmp
+data/train_50k.jsonl
+data/train_50k.unordered.jsonl
