@@ -36,6 +36,8 @@ image = (
         "huggingface_hub==1.33.0",
         "einops==0.8.2",
         "bitsandbytes",
+        "flash-linear-attention==0.5.2",
+        "fla-core==0.5.2",
     )
     .run_commands(
         "git clone --filter=blob:none --no-checkout https://github.com/Zefan-Cai/Open-Jev.git /opt/open-jev"
@@ -43,7 +45,7 @@ image = (
         " && git -C /opt/open-jev sparse-checkout set jev pyproject.toml README.md LICENSE"
         f" && git -C /opt/open-jev checkout {OPEN_JEV_COMMIT}"
         " && pip install -e /opt/open-jev"
-        " && python -c 'import jev.model, bitsandbytes'"
+        " && python -c 'import jev.model, bitsandbytes, fla, torch; assert torch.__version__.startswith(\"2.8.0\"), torch.__version__'"
     )
     .env(
         {
@@ -175,6 +177,12 @@ def train() -> dict:
     result["cutoff_usd"] = CUTOFF_USD
     result["stop_usd"] = STOP_USD
     result["all_in_usd_per_hour"] = ALL_IN_PER_SEC * 3600
+    try:
+        import fla
+
+        result["fast_path"] = getattr(fla, "__version__", "installed")
+    except Exception:
+        result["fast_path"] = "unavailable"
     result["second_epoch"] = False
     result["second_epoch_reason"] = (
         "not started; dev completeness@5 on the BM25 top 50 was not measured, "

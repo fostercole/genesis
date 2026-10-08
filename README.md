@@ -1,6 +1,6 @@
 # Tool filter
 
-A 2B scorer keeps a short tool list before a frontier agent sees the menu. The study design is in [docs/tool-filter-research-plan.md](docs/tool-filter-research-plan.md). Training, when it happens, is QLoRA on a Modal H100. This checkout does not start that run.
+A 2B scorer keeps a short tool list before a frontier agent sees the menu. The study design is in [docs/tool-filter-research-plan.md](docs/tool-filter-research-plan.md). Training is QLoRA on a Modal H100.
 
 ## T4 scorer smoke
 

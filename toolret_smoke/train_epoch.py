@@ -121,18 +121,27 @@ def _try_backward(model, rows, prepared) -> bool:
 
 
 def choose_microbatch(model, rows: list[dict], tokenizer, max_length: int) -> tuple[int, bool, list]:
-    """Largest microbatch that divides 16. Checkpointing stays off unless nothing fits."""
+    """Largest microbatch that divides 16 and fits every chunk of the first step.
+
+    Checkpointing stays off unless no size fits without it.
+    """
     import torch
 
-    sample = rows[:16]
+    sample = rows[:EFFECTIVE_BATCH]
     prepared = [_options(tokenizer, row, max_length) for row in sample]
     for checkpointing in (False, True):
         _enable_training(model, checkpointing)
         for size in (16, 8, 4, 2, 1):
-            if _try_backward(model, sample[:size], prepared[:size]):
-                torch.cuda.empty_cache()
-                return size, checkpointing, prepared
+            fits = True
+            for start in range(0, EFFECTIVE_BATCH, size):
+                if not _try_backward(
+                    model, sample[start : start + size], prepared[start : start + size]
+                ):
+                    fits = False
+                    break
             torch.cuda.empty_cache()
+            if fits:
+                return size, checkpointing, prepared
     raise RuntimeError("even microbatch 1 with checkpointing does not fit")
 
 
@@ -190,6 +199,8 @@ def run_epoch(
     launched = False
     stop_reason = ""
     step = 0
+    oom_retries = 0
+    step_ooms = 0
 
     def snapshot(name: str) -> None:
         destination = output / name
@@ -218,10 +229,41 @@ def run_epoch(
                 token_sum += tokens
                 del loss
         except Exception as error:
+            import gc
+
             optimizer.zero_grad(set_to_none=True)
+            gc.collect()
             torch.cuda.empty_cache()
             if not _oom(error):
                 raise
+            oom_retries += 1
+            step_ooms += 1
+            print(
+                json.dumps(
+                    {
+                        "event": "oom",
+                        "step": step,
+                        "microbatch": microbatch,
+                        "checkpointing": checkpointing,
+                        "retries": step_ooms,
+                    }
+                ),
+                flush=True,
+            )
+            if step_ooms > 6:
+                stop_reason = "oom_after_probe"
+                snapshot("stopped-oom")
+                break
+            if microbatch > 1:
+                microbatch //= 2
+                accumulation = EFFECTIVE_BATCH // microbatch
+                print(json.dumps({"event": "oom_shrink", "microbatch": microbatch}), flush=True)
+                continue
+            if not checkpointing:
+                checkpointing = True
+                _enable_training(model, True)
+                print(json.dumps({"event": "oom_checkpointing"}), flush=True)
+                continue
             stop_reason = "oom_after_probe"
             snapshot("stopped-oom")
             break
@@ -248,6 +290,7 @@ def run_epoch(
             snapshot("stopped-nonfinite")
             break
         optimizer.step()
+        step_ooms = 0
         record = {
             "step": step + 1,
             "loss": loss_sum,
@@ -317,6 +360,7 @@ def run_epoch(
         "accumulation": accumulation,
         "effective_batch": EFFECTIVE_BATCH,
         "gradient_checkpointing": checkpointing,
+        "oom_retries": oom_retries,
         "base_lr": base_lrs[0],
         "head_lr": base_lrs[1],
         "warmup_steps": warmup_steps,
