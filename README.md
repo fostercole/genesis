@@ -20,6 +20,8 @@ Results land in `results/t4_scorer_smoke.json`. After a paid run, append a line 
 
 `data/train_50k.jsonl` is the seed-0 50,000-row draw. It is gitignored. Rebuild it with `python materialize_train_50k.py`. The training command measures tokens per second, estimates the all-in cost, and does not run the rest of the epoch if that estimate is over $29.
 
+The image keeps `torch==2.8.0` from the cu128 index, then installs `triton==3.7.1` with `--no-deps`. Torch's own pin is Triton 3.4.0, and flash-linear-attention 0.5.2 refuses that range on Hopper inside `chunk_bwd_dqkwg`.
+
 ```bash
 python materialize_train_50k.py
 modal run modal_h100_train.py
