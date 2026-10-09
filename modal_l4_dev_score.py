@@ -424,23 +424,12 @@ def _finish(
 
 @app.local_entrypoint()
 def main() -> None:
+    """Spawn the scorer and return. A blocking remote() call was cancelled when the client heartbeat dropped."""
     checked = preflight.remote()
-    summary = score.remote()
-    summary["preflight"] = checked
-    manifest_path = Path("data/dev_bm25_manifest.json")
-    if manifest_path.is_file():
-        summary["bm25"] = json.loads(manifest_path.read_text())
-    out = Path("results/dev_bm25_top50.json")
+    call = score.spawn()
+    out = Path("results/dev_bm25_spawn.json")
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(summary, indent=2) + "\n")
-    print(
-        json.dumps(
-            {
-                "status": summary["status"],
-                "launched": summary["launched"],
-                "estimate_usd": summary.get("estimate_usd"),
-                "wrote": str(out),
-            }
-        ),
-        flush=True,
+    out.write_text(
+        json.dumps({"function_call_id": call.object_id, "preflight": checked}, indent=2) + "\n"
     )
+    print(json.dumps({"spawned": call.object_id}), flush=True)
