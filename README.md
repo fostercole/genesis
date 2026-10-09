@@ -20,6 +20,10 @@ Results land in `results/t4_scorer_smoke.json`. After a paid run, append a line 
 
 `data/train_50k.jsonl` is the seed-0 50,000-row draw. It is gitignored. Rebuild it with `python materialize_train_50k.py`. The training command measures tokens per second, estimates the all-in cost, and does not run the rest of the epoch if that estimate is over $29.
 
+## Dev lock, step 6
+
+`materialize_dev_bm25.py` builds the BM25 top 50 for the 2,000 dev rows against `mangopy/ToolRet-Tools`. The indexed text is the tool name, description, and parameter names. The query is the row query, not the instruction. Positives that BM25 missed are kept, and the list is filled back to 50 from BM25. `modal_l4_dev_score.py` scores that list with the original Open-Jev-2B checkpoint and the tuned `pass1/final` checkpoint on one L4. It times 16 rows first and does not score the rest if the loaded-L4 estimate is over $10.
+
 The image keeps `torch==2.8.0` from the cu128 index, then installs `triton==3.7.1` with `--no-deps`. Torch's own pin is Triton 3.4.0, and flash-linear-attention 0.5.2 refuses that range on Hopper inside `chunk_bwd_dqkwg`.
 
 ```bash

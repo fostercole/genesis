@@ -1,0 +1,30 @@
+{
+  "rows": 2000,
+  "candidates_per_row": 50,
+  "tool_repo": "mangopy/ToolRet-Tools",
+  "tool_sha": "e06c38c75612b6536bd959e08cdd345894aba6a7",
+  "tool_rows": 44453,
+  "train_repo": "mangopy/ToolRet-Training-20w",
+  "train_sha": "fdf5a317455b1e60785de7ba587496aa6cc878e4",
+  "bm25": {
+    "library": "bm25s",
+    "version": "0.3.13",
+    "method": "lucene",
+    "k1": 1.5,
+    "b": 0.75,
+    "stopwords": "english",
+    "fetch_k": 200,
+    "query": "row query only; the instruction is not concatenated",
+    "document": "name, description, and parameter names via parse_tool and render_tool"
+  },
+  "candidate_policy": "The plan does not say to keep a positive BM25 missed. Every unique positive is kept, and the remaining slots up to 50 are filled from the BM25 ranking. Lowest non-positives are dropped to stay at 50. A positive that still does not fit counts as a miss.",
+  "positive_match_counts": {
+    "exact": 4230
+  },
+  "n_positive": 4230,
+  "n_positive_in_bm25": 2053,
+  "n_injected": 2177,
+  "n_positive_outside": 0,
+  "unmatched_examples": [],
+  "output": "data/dev_bm25_top50.jsonl"
+}
