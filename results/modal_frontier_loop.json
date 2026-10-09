@@ -409,8 +409,8 @@
     "errors": null,
     "spent_usd_estimated": 0.0
   },
-  "paused_for_balance": false,
-  "stop_reason": "72B inference stopped before a scored sample. Checkpointed. No cheaper model was started.",
+  "paused_for_balance": true,
+  "stop_reason": "Checkpointed at 87 examples. The last H100 app stopped after 11 new queries. Live Starter credit left is $0.06, so no further GPU was started.",
   "cli_breakdown_usd": {
     "Memory": 0.03095109,
     "H100": 0.33574984,
@@ -418,13 +418,15 @@
     "Network Egress": 2.57e-06
   },
   "app_ids": [
+    "ap-zPKUUqLg9jSfeMpiTWiqGU",
+    "ap-URz7uchCramlcymRTDCGsl",
     "ap-DcwV72eFO60ohov7PjHkku"
   ],
   "sample_shrunk": false,
   "probe_query_seconds": null,
   "load_seconds": null,
   "vllm_version": null,
-  "gpu_name": null,
+  "gpu_name": "NVIDIA H100 80GB HBM3",
   "infer_stop_reason": "",
   "open_jev_commit": "bd4118882f733574a3250a4b65fe4d884130c08b",
   "filter_base_revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
@@ -441,9 +443,9 @@
   },
   "cost_source": "modal_billing_report",
   "this_app_spend_usd": 0.40028650000000005,
-  "app_url": "https://modal.com/apps/fostercole/main/ap-URz7uchCramlcymRTDCGsl",
-  "vllm_quantization": null,
-  "stopped_at_credit_wall": false,
+  "app_url": "https://modal.com/apps/fostercole/main/ap-DcwV72eFO60ohov7PjHkku",
+  "vllm_quantization": "awq_marlin",
+  "stopped_at_credit_wall": true,
   "queries": [
     {
       "id": "train_59141",
@@ -45179,5 +45181,19 @@
   "starter_remaining_usd": 0.0,
   "frontier_apps_today_usd": 3.72830155,
   "old_1_14_cap_stopped_first_app": false,
-  "cap_note": "ap-jXnsjj4OHb7SyQlK56vRan was stopped from the CLI while scoring about 14 examples. The 8-example H100 job ap-zPKUUqLg9jSfeMpiTWiqGU finished its planned sample; a prelaunch estimate under a roughly $1.98 cap cut the plan from 90 to 8, and the $1.96 job cap was not what ended it. Inference spent about $0.29. Later H100 runs continued the same pairs up to 87 examples. The Starter grant is exhausted and billed cost is $0.85, so no further GPU call was made."
+  "cap_note": "ap-jXnsjj4OHb7SyQlK56vRan was stopped from the CLI while scoring about 14 examples. The 8-example H100 job ap-zPKUUqLg9jSfeMpiTWiqGU finished its planned sample; a prelaunch estimate under a roughly $1.98 cap cut the plan from 90 to 8, and the $1.96 job cap was not what ended it. Inference spent about $0.29. Later H100 runs continued the same pairs up to 87 examples. The Starter grant is exhausted and billed cost is $0.85, so no further GPU call was made.",
+  "app_urls": {
+    "finished_8": "https://modal.com/apps/fostercole/main/ap-zPKUUqLg9jSfeMpiTWiqGU",
+    "continued_to_76": "https://modal.com/apps/fostercole/main/ap-URz7uchCramlcymRTDCGsl",
+    "continued_to_87": "https://modal.com/apps/fostercole/main/ap-DcwV72eFO60ohov7PjHkku"
+  },
+  "posted_app_usd": {
+    "ap-zPKUUqLg9jSfeMpiTWiqGU": 0.3617,
+    "ap-URz7uchCramlcymRTDCGsl": 1.4989,
+    "ap-DcwV72eFO60ohov7PjHkku": 0.4003
+  },
+  "metered_cost_after_usd": 29.9435,
+  "credits_applied_after_usd": 29.87,
+  "billed_cost_after_usd": 0.0,
+  "remaining_credit_after_usd": 0.0565
 }
