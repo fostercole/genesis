@@ -1,63 +1,828 @@
 {
+  "launched": true,
+  "trained": false,
+  "second_epoch": false,
+  "official_test_split": false,
+  "k": 10,
+  "menu": "The same dev BM25 top 50 for every arm. Filtered arms keep 10.",
   "model": "Qwen/Qwen2.5-72B-Instruct",
   "weights": "Qwen/Qwen2.5-72B-Instruct-AWQ",
   "revision": "698703eae6604af048a3d2f509995dc302088217",
   "quantization": "4-bit",
-  "quantization_method": "awq_marlin",
+  "vllm_quantization": "awq_marlin",
+  "vllm_version": "0.8.5.post1",
   "gpu": "H100",
   "gpu_name": "NVIDIA H100 80GB HBM3",
   "sample_size": 8,
-  "sample_size_target": 90,
   "sample_size_planned": 8,
-  "k": 10,
-  "candidate_pool": 50,
-  "pool": "dev BM25 top 50, same queries and same pool for every arm",
-  "stopped_at_credit_wall": true,
-  "stop_reason": "Remaining Starter credit before this launch was $2.98, so the cap was $1.98. The pre-launch estimate of one loaded H100 query was $1.24, which cut the sample from 90 to 8. Those 8 queries finished. Inference itself metered about $0.29.",
+  "full_sample": 90,
+  "sample_shrunk": true,
+  "shrink_reason": "The credit plan fit 8 queries under the remaining Starter balance minus the buffer. The run finished that plan.",
+  "stopped_at_credit_wall": false,
+  "infer_stop_reason": "",
+  "load_seconds": 73.15064498199999,
+  "probe_query_seconds": 14.655478447000007,
   "spend_usd": 0.31656795331654525,
-  "infer_spent_estimate_usd": 0.29232255559422304,
-  "score_spent_estimate_usd": 0.024245397722322225,
-  "cost_source": "in_job_rate_estimate_cli_not_posted",
-  "cli_app_usd": null,
-  "cli_breakdown_usd": {},
-  "app_id": "ap-zPKUUqLg9jSfeMpiTWiqGU",
+  "cost_source": "rate_estimate_cli_not_posted",
+  "cli_breakdown_usd": {
+    "infer_estimate": 0.29232255559422304,
+    "score_estimate": 0.02424539772232222
+  },
+  "infer_spent_usd_estimated": 0.29232255559422304,
+  "score_spent_usd_estimated": 0.02424539772232222,
+  "app_ids": [
+    "ap-zPKUUqLg9jSfeMpiTWiqGU"
+  ],
   "app_url": "https://modal.com/apps/fostercole/main/ap-zPKUUqLg9jSfeMpiTWiqGU",
-  "hosted_jev": {
-    "in_design": true,
-    "paused": true,
-    "called": false,
-    "included_in_graph": false,
-    "reason": "The hosted Jev API was not called. The arm stays in the design, is paused, and is omitted from the graph."
+  "remaining_credit_after_usd": 2.93099784,
+  "metered_cost_after_usd": 27.06900216,
+  "billed_cost_after_usd": 0.0,
+  "starter_credit_usd": 30.0,
+  "buffer_usd": 1.0,
+  "open_jev_commit": "bd4118882f733574a3250a4b65fe4d884130c08b",
+  "filter_base_revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+  "original_2b": {
+    "model_id": "ZefanCai/Open-Jev-2B",
+    "base_model_id": "Qwen/Qwen3.5-2B",
+    "base_revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "open_jev_commit": "bd4118882f733574a3250a4b65fe4d884130c08b"
+  },
+  "tuned_2b": {
+    "model_id": "Qwen/Qwen3.5-2B",
+    "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "checkpoint": "toolret-h100-train:pass1/final"
   },
   "arms": {
     "full": {
       "label": "full menu",
       "accuracy": 1.0,
-      "modal_cost_usd": 0.09292051572396602,
+      "cost_usd": 0.09292051572396602,
       "seconds": 54.999087389500026
     },
     "bm25": {
       "label": "keyword search",
       "accuracy": 0.75,
-      "modal_cost_usd": 0.0759840279712171,
+      "cost_usd": 0.0759840279712171,
       "seconds": 44.9744834285
     },
     "original": {
-      "label": "original Open-Jev-2B",
+      "label": "original Open-Jev-2B top 10",
       "accuracy": 0.625,
-      "modal_cost_usd": 0.07426843177145247,
+      "cost_usd": 0.07426843177145247,
       "seconds": 43.95903248549998
     },
     "tuned": {
-      "label": "tuned 2B",
+      "label": "tuned 2B top 10",
       "accuracy": 0.75,
-      "modal_cost_usd": 0.07339497784990964,
+      "cost_usd": 0.07339497784990964,
       "seconds": 43.44204042849997
+    },
+    "hosted": {
+      "label": "hosted Jev top 10",
+      "accuracy": 0.75,
+      "cost_usd": 0.0,
+      "seconds": 1.1755695040046703,
+      "modal_cost_usd": 0.0,
+      "api_cost_usd": 0.0008491140000000001
     }
   },
-  "second_epoch": false,
-  "official_toolret_test_set": false,
-  "trained": false,
-  "vllm_version": "0.8.5.post1",
-  "load_seconds": 73.15064498199999
+  "queries": [
+    {
+      "id": "train_59141",
+      "arms": {
+        "full": {
+          "called": [
+            "Get_ISS_Location",
+            "simpleRegions"
+          ],
+          "seconds": 4.796025428999997
+        },
+        "bm25": {
+          "called": [
+            "Get_ISS_Location",
+            "simpleRegions"
+          ],
+          "seconds": 4.321722776000001
+        },
+        "original": {
+          "called": [
+            "Get_ISS_Location",
+            "Phone_Formatter_regions"
+          ],
+          "seconds": 2.7985396880000053
+        },
+        "tuned": {
+          "called": [
+            "Get_ISS_Location",
+            "Phone_Formatter_regions"
+          ],
+          "seconds": 2.739190554000004
+        },
+        "hosted": {
+          "called": [
+            "Get_ISS_Location"
+          ],
+          "seconds": 0.17558051100058947
+        }
+      }
+    },
+    {
+      "id": "train_31862",
+      "arms": {
+        "full": {
+          "called": [
+            "getGeolocationDetailsList"
+          ],
+          "seconds": 4.8826217999999955
+        },
+        "bm25": {
+          "called": [
+            "getGeolocationDetailsList"
+          ],
+          "seconds": 3.5670203749999985
+        },
+        "original": {
+          "called": [
+            "bulkGeolocationLookup"
+          ],
+          "seconds": 3.4657794160000037
+        },
+        "tuned": {
+          "called": [
+            "bulkGeolocationLookup"
+          ],
+          "seconds": 3.4712692669999967
+        },
+        "hosted": {
+          "called": [
+            "bulkGeolocationLookup"
+          ],
+          "seconds": 0.205729096000141
+        }
+      }
+    },
+    {
+      "id": "train_102966",
+      "arms": {
+        "full": {
+          "called": [
+            "crypto_news_v2_Top_News",
+            "peer_metrics_average"
+          ],
+          "seconds": 4.570258500999998
+        },
+        "bm25": {
+          "called": [
+            "crypto_news_v2_Top_News",
+            "peer_metrics_average"
+          ],
+          "seconds": 3.1384885319999967
+        },
+        "original": {
+          "called": [
+            "crypto_news_v2_Top_News",
+            "peer_metrics_average"
+          ],
+          "seconds": 3.7655035170000133
+        },
+        "tuned": {
+          "called": [
+            "crypto_news_v2_Top_News",
+            "peer_metrics_average"
+          ],
+          "seconds": 4.290180021999987
+        },
+        "hosted": {
+          "called": [
+            "crypto_news_v2_Top_News"
+          ],
+          "seconds": 0.12831832200026838
+        }
+      }
+    },
+    {
+      "id": "train_32840",
+      "arms": {
+        "full": {
+          "called": [
+            "calculate_future_value"
+          ],
+          "seconds": 4.617352097000008
+        },
+        "bm25": {
+          "called": [
+            "calculate_future_value"
+          ],
+          "seconds": 2.882630344000006
+        },
+        "original": {
+          "called": [
+            "future_investment_value"
+          ],
+          "seconds": 2.8169322960000045
+        },
+        "tuned": {
+          "called": [
+            "calculate_future_value"
+          ],
+          "seconds": 2.9834496349999995
+        },
+        "hosted": {
+          "called": [
+            "future_investment_value"
+          ],
+          "seconds": 0.11656563600263325
+        }
+      }
+    },
+    {
+      "id": "train_46254",
+      "arms": {
+        "full": {
+          "called": [
+            "Get_Detailed_Cake_Recipe_by_ID",
+            "side_dish_ingredient"
+          ],
+          "seconds": 5.408814032000009
+        },
+        "bm25": {
+          "called": [
+            "Get_Detailed_Cake_Recipe_by_ID",
+            "side_dish_ingredient"
+          ],
+          "seconds": 4.2244923190000065
+        },
+        "original": {
+          "called": [
+            "The_Birthday_Cake_DB_Detailed_Cake_Recipe_by_ID",
+            "Recipe_Finder_side_dish_ingredient"
+          ],
+          "seconds": 4.068896274999986
+        },
+        "tuned": {
+          "called": [
+            "detailed_cake_recipe_by_id",
+            "side_dish_ingredient"
+          ],
+          "seconds": 3.454826682999993
+        },
+        "hosted": {
+          "called": [
+            "Get_Detailed_Cake_Recipe_by_ID"
+          ],
+          "seconds": 0.160095202998491
+        }
+      }
+    },
+    {
+      "id": "train_49453",
+      "arms": {
+        "full": {
+          "called": [
+            "SearchCities"
+          ],
+          "seconds": 3.408211663000003
+        },
+        "bm25": {
+          "called": [
+            "Get_Cities_by_State_and_Keyword"
+          ],
+          "seconds": 2.7536951460000125
+        },
+        "original": {
+          "called": [
+            "SearchCities"
+          ],
+          "seconds": 2.7505886609999948
+        },
+        "tuned": {
+          "called": [
+            "SearchCities"
+          ],
+          "seconds": 2.3595403180000005
+        },
+        "hosted": {
+          "called": [
+            "SearchCities"
+          ],
+          "seconds": 0.12071510600071633
+        }
+      }
+    },
+    {
+      "id": "train_45054",
+      "arms": {
+        "full": {
+          "called": [
+            "Drinking_Get_random_challange",
+            "Get_Random_Challenge"
+          ],
+          "seconds": 4.620442609000008
+        },
+        "bm25": {
+          "called": [
+            "get_random_challange",
+            "Get_Random_Challenge"
+          ],
+          "seconds": 3.041540500999986
+        },
+        "original": {
+          "called": [
+            "Drinking_Get_random_challange",
+            "Drinking_Get_random_challange"
+          ],
+          "seconds": 3.2350103969999964
+        },
+        "tuned": {
+          "called": [
+            "Drinking_Get_random_challange",
+            "Get_Challenge_Data"
+          ],
+          "seconds": 2.9758781680000084
+        },
+        "hosted": {
+          "called": [
+            "Drinking_Get_random_challange"
+          ],
+          "seconds": 0.13972097600344568
+        }
+      }
+    },
+    {
+      "id": "train_151414",
+      "arms": {
+        "full": {
+          "called": [
+            "batting_average"
+          ],
+          "seconds": 4.40770001300001
+        },
+        "bm25": {
+          "called": [
+            "batting_average"
+          ],
+          "seconds": 2.7572321899999963
+        },
+        "original": {
+          "called": [
+            "batting_average"
+          ],
+          "seconds": 2.770120989999981
+        },
+        "tuned": {
+          "called": [
+            "batting_average"
+          ],
+          "seconds": 2.8800445359999856
+        },
+        "hosted": {
+          "called": [
+            "batting_average"
+          ],
+          "seconds": 0.12884465399838518
+        }
+      }
+    }
+  ],
+  "stop_reason": "Remaining Starter credit before this launch was $2.98, so the cap was $1.98. The pre-launch estimate of one loaded H100 query was $1.24, which cut the sample from 90 to 8. Those 8 queries finished on one H100. Hosted Jev was scored afterwards from the saved full-menu calls and did not start a GPU.",
+  "hosted_menus": {
+    "train_59141": [
+      {
+        "call_name": "Get_ISS_Location",
+        "name": "Get ISS Location",
+        "corpus_id": "web:toolACE_tool_7037"
+      },
+      {
+        "call_name": "simpleRegions",
+        "name": "simpleRegions",
+        "corpus_id": "web:toolACE_tool_4731"
+      },
+      {
+        "call_name": "Phone_Number_Validation_and_Formatting",
+        "name": "Phone Number Validation and Formatting",
+        "corpus_id": "web:toolACE_tool_7036"
+      },
+      {
+        "call_name": "ISS_Location_get",
+        "name": "ISS_Location_get",
+        "corpus_id": "web:toolbench_tool_10325"
+      },
+      {
+        "call_name": "Phone_Formatter_regions",
+        "name": "Phone_Formatter_regions",
+        "corpus_id": "web:toolbench_tool_7379"
+      },
+      {
+        "call_name": "Domain_WHOIS_Lookup_API_domain_name",
+        "name": "Domain_WHOIS_Lookup_API_domain_name",
+        "corpus_id": "web:toolbench_tool_8881"
+      },
+      {
+        "call_name": "Free_Phone_Carrier_Lookup_Carrier_Endpoint",
+        "name": "Free_Phone_Carrier_Lookup_Carrier_Endpoint",
+        "corpus_id": "web:toolbench_tool_10339"
+      },
+      {
+        "call_name": "United_States_COVID-19_New_Case_Count_API",
+        "name": "United States COVID-19 New Case Count API",
+        "corpus_id": "web:toolACE_tool_1120"
+      },
+      {
+        "call_name": "United_States_COVID-19_New_Death_Count_API",
+        "name": "United States COVID-19 New Death Count API",
+        "corpus_id": "web:toolACE_tool_14826"
+      },
+      {
+        "call_name": "United_States_COVID-19_New_Test_Count_API",
+        "name": "United States COVID-19 New Test Count API",
+        "corpus_id": "web:toolACE_tool_6873"
+      }
+    ],
+    "train_31862": [
+      {
+        "call_name": "bulkGeolocationLookup",
+        "name": "bulkGeolocationLookup",
+        "corpus_id": "customized:toolalpaca_tool_1432"
+      },
+      {
+        "call_name": "getGeolocationDetailsList",
+        "name": "getGeolocationDetailsList",
+        "corpus_id": "customized:toolalpaca_tool_1693"
+      },
+      {
+        "call_name": "batchLookup",
+        "name": "batchLookup",
+        "corpus_id": "customized:toolalpaca_tool_1068"
+      },
+      {
+        "call_name": "getGeolocation",
+        "name": "getGeolocation",
+        "corpus_id": "customized:toolalpaca_tool_1131"
+      },
+      {
+        "call_name": "getGeoIP",
+        "name": "getGeoIP",
+        "corpus_id": "customized:toolalpaca_tool_1067"
+      },
+      {
+        "call_name": "get_geolocation_data",
+        "name": "get_geolocation_data",
+        "corpus_id": "web:apigen_tool_3177"
+      },
+      {
+        "call_name": "Get_IP_Geolocation",
+        "name": "Get IP Geolocation",
+        "corpus_id": "web:toolACE_tool_8505"
+      },
+      {
+        "call_name": "geolocationLookup",
+        "name": "geolocationLookup",
+        "corpus_id": "customized:toolalpaca_tool_1431"
+      },
+      {
+        "call_name": "ip_geolocation_lookup",
+        "name": "ip_geolocation_lookup",
+        "corpus_id": "web:apigen_tool_2480"
+      },
+      {
+        "call_name": "IP_Geolocation_Find_IP_Location_and_IP_Info_Get_",
+        "name": "IP_Geolocation_Find_IP_Location_and_IP_Info_Get_IP_Geolocation",
+        "corpus_id": "web:toolbench_tool_9799"
+      }
+    ],
+    "train_102966": [
+      {
+        "call_name": "crypto_news_v2_Top_News",
+        "name": "crypto_news_v2_Top_News",
+        "corpus_id": "web:toolbench_tool_983"
+      },
+      {
+        "call_name": "Top_News_API",
+        "name": "Top News API",
+        "corpus_id": "web:toolACE_tool_7191"
+      },
+      {
+        "call_name": "Cryptocurrency_News_CoinDesk",
+        "name": "Cryptocurrency_News_CoinDesk",
+        "corpus_id": "web:toolbench_tool_2784"
+      },
+      {
+        "call_name": "peer_metrics_average",
+        "name": "peer_metrics_average",
+        "corpus_id": "web:apigen_tool_3179"
+      },
+      {
+        "call_name": "CoinDesk_News_API",
+        "name": "CoinDesk News API",
+        "corpus_id": "web:toolACE_tool_3024"
+      },
+      {
+        "call_name": "peer_ratio_averages",
+        "name": "peer_ratio_averages",
+        "corpus_id": "web:apigen_tool_2229"
+      },
+      {
+        "call_name": "MarketCI_Analytics_Peer_Metrics_Average",
+        "name": "MarketCI_Analytics_Peer_Metrics_Average",
+        "corpus_id": "web:toolbench_tool_905"
+      },
+      {
+        "call_name": "Peer_Ratio_Averages",
+        "name": "Peer Ratio Averages",
+        "corpus_id": "web:toolACE_tool_2890"
+      },
+      {
+        "call_name": "Crypto_News_v2_Get_Individual_News_Source",
+        "name": "Crypto_News_v2_Get_Individual_News_Source",
+        "corpus_id": "web:toolbench_tool_3321"
+      },
+      {
+        "call_name": "symbols_get_peers",
+        "name": "symbols_get_peers",
+        "corpus_id": "web:apigen_tool_2290"
+      }
+    ],
+    "train_32840": [
+      {
+        "call_name": "future_investment_value",
+        "name": "future_investment_value",
+        "corpus_id": "web:apigen_tool_37"
+      },
+      {
+        "call_name": "calculate_future_value",
+        "name": "calculate_future_value",
+        "corpus_id": "code:toolink_tool_635"
+      },
+      {
+        "call_name": "calculate_ci",
+        "name": "calculate_ci",
+        "corpus_id": "code:toolink_tool_801"
+      },
+      {
+        "call_name": "calculate_compound_interest_principal_rate_time",
+        "name": "calculate_compound_interest(principal, rate, time)",
+        "corpus_id": "code:craft_Math_algebra_tool_14"
+      },
+      {
+        "call_name": "calculate_final_balance",
+        "name": "calculate_final_balance",
+        "corpus_id": "code:toolink_tool_1179"
+      },
+      {
+        "call_name": "calculate_final_value",
+        "name": "calculate_final_value",
+        "corpus_id": "code:toolink_tool_1122"
+      },
+      {
+        "call_name": "calculate_annual_interest_rate_initial_investmen",
+        "name": "calculate_annual_interest_rate(initial_investment, final_value, duration_in_years)",
+        "corpus_id": "code:craft_Math_algebra_tool_50"
+      },
+      {
+        "call_name": "compound_interest",
+        "name": "compound_interest",
+        "corpus_id": "web:apigen_tool_601"
+      },
+      {
+        "call_name": "calculate_annual_rate_of_interest",
+        "name": "calculate_annual_rate_of_interest",
+        "corpus_id": "code:toolink_tool_350"
+      },
+      {
+        "call_name": "calculate_half_yearly_interest",
+        "name": "calculate_half_yearly_interest",
+        "corpus_id": "code:toolink_tool_1592"
+      }
+    ],
+    "train_46254": [
+      {
+        "call_name": "Get_Detailed_Cake_Recipe_by_ID",
+        "name": "Get Detailed Cake Recipe by ID",
+        "corpus_id": "web:toolACE_tool_10236"
+      },
+      {
+        "call_name": "detailed_cake_recipe_by_id",
+        "name": "detailed_cake_recipe_by_id",
+        "corpus_id": "web:apigen_tool_2108"
+      },
+      {
+        "call_name": "Generate_Recipe",
+        "name": "Generate Recipe",
+        "corpus_id": "web:toolLens_tool_49"
+      },
+      {
+        "call_name": "The_Birthday_Cake_DB_Detailed_Cake_Recipe_by_ID",
+        "name": "The_Birthday_Cake_DB_Detailed_Cake_Recipe_by_ID",
+        "corpus_id": "web:toolbench_tool_7229"
+      },
+      {
+        "call_name": "side_dish_ingredient",
+        "name": "side_dish_ingredient",
+        "corpus_id": "web:apigen_tool_2390"
+      },
+      {
+        "call_name": "Generate_recipe",
+        "name": "Generate recipe",
+        "corpus_id": "web:toolLens_tool_265"
+      },
+      {
+        "call_name": "Recipe_Detail",
+        "name": "Recipe Detail",
+        "corpus_id": "web:toolACE_tool_6903"
+      },
+      {
+        "call_name": "Recipe_Finder_side_dish_ingredient",
+        "name": "Recipe_Finder_side_dish_ingredient",
+        "corpus_id": "web:toolbench_tool_7240"
+      },
+      {
+        "call_name": "Recipe_Details",
+        "name": "Recipe Details",
+        "corpus_id": "web:toolACE_tool_11715"
+      },
+      {
+        "call_name": "Get_Side_Dish_Recipe",
+        "name": "Get Side Dish Recipe",
+        "corpus_id": "web:toolACE_tool_5795"
+      }
+    ],
+    "train_49453": [
+      {
+        "call_name": "SearchCities",
+        "name": "SearchCities",
+        "corpus_id": "web:toolACE_tool_10450"
+      },
+      {
+        "call_name": "Cities_API",
+        "name": "Cities API",
+        "corpus_id": "web:toolACE_tool_9807"
+      },
+      {
+        "call_name": "Idealista_v2_properties_list",
+        "name": "Idealista_v2_properties_list",
+        "corpus_id": "web:toolbench_tool_5096"
+      },
+      {
+        "call_name": "Beers_List_Get_beers_by_single_country",
+        "name": "Beers_List_Get_beers_by_single_country",
+        "corpus_id": "web:toolbench_tool_7215"
+      },
+      {
+        "call_name": "Get_Cities_by_State_and_Keyword",
+        "name": "Get Cities by State and Keyword",
+        "corpus_id": "web:toolACE_tool_4841"
+      },
+      {
+        "call_name": "Get_Provinces_of_Spain",
+        "name": "Get Provinces of Spain",
+        "corpus_id": "web:toolACE_tool_6337"
+      },
+      {
+        "call_name": "Get_beers_by_single_country",
+        "name": "Get beers by single country",
+        "corpus_id": "web:toolLens_tool_90"
+      },
+      {
+        "call_name": "getRegions",
+        "name": "getRegions",
+        "corpus_id": "customized:toolalpaca_tool_1820"
+      },
+      {
+        "call_name": "cities",
+        "name": "cities",
+        "corpus_id": "web:toolLens_tool_259"
+      },
+      {
+        "call_name": "Get_All_Genres_for_Art_Openings_in_Italy",
+        "name": "Get All Genres for Art Openings in Italy",
+        "corpus_id": "web:toolACE_tool_609"
+      }
+    ],
+    "train_45054": [
+      {
+        "call_name": "Drinking_Get_random_challange",
+        "name": "Drinking_Get_random_challange",
+        "corpus_id": "web:toolbench_tool_4670"
+      },
+      {
+        "call_name": "Get_Random_Challenge",
+        "name": "Get Random Challenge",
+        "corpus_id": "web:toolACE_tool_4200"
+      },
+      {
+        "call_name": "get_random_challange",
+        "name": "get_random_challange",
+        "corpus_id": "web:apigen_tool_111"
+      },
+      {
+        "call_name": "Get_Challenge_Data",
+        "name": "Get Challenge Data",
+        "corpus_id": "web:toolACE_tool_13303"
+      },
+      {
+        "call_name": "Get_Random_Question",
+        "name": "Get Random Question",
+        "corpus_id": "web:toolACE_tool_12945"
+      },
+      {
+        "call_name": "Drinking_Get_random_question",
+        "name": "Drinking_Get_random_question",
+        "corpus_id": "web:toolbench_tool_4669"
+      },
+      {
+        "call_name": "Semantic_Quotes_Random_Quote",
+        "name": "Semantic_Quotes_Random_Quote",
+        "corpus_id": "web:toolbench_tool_5489"
+      },
+      {
+        "call_name": "get_random_question",
+        "name": "get_random_question",
+        "corpus_id": "web:apigen_tool_617"
+      },
+      {
+        "call_name": "TikTok_v3_Challenge_Videos",
+        "name": "TikTok_v3_Challenge_Videos",
+        "corpus_id": "web:toolbench_tool_7929"
+      },
+      {
+        "call_name": "Get_Challenge_Videos",
+        "name": "Get Challenge Videos",
+        "corpus_id": "web:toolACE_tool_1371"
+      }
+    ],
+    "train_151414": [
+      {
+        "call_name": "batting_average",
+        "name": "batting_average",
+        "corpus_id": "web:apigen_tool_247"
+      },
+      {
+        "call_name": "Twelve_Data_AVG",
+        "name": "Twelve_Data_AVG",
+        "corpus_id": "web:toolbench_tool_13607"
+      },
+      {
+        "call_name": "players_get-batting",
+        "name": "players/get-batting",
+        "corpus_id": "web:toolACE_tool_9161"
+      },
+      {
+        "call_name": "Twelve_Data_EMA",
+        "name": "Twelve_Data_EMA",
+        "corpus_id": "web:toolbench_tool_13744"
+      },
+      {
+        "call_name": "AverageReview",
+        "name": "AverageReview",
+        "corpus_id": "web:reversechain_tool_489"
+      },
+      {
+        "call_name": "AverageRating",
+        "name": "AverageRating",
+        "corpus_id": "web:reversechain_tool_488"
+      },
+      {
+        "call_name": "ReviewAverage",
+        "name": "ReviewAverage",
+        "corpus_id": "web:reversechain_tool_487"
+      },
+      {
+        "call_name": "Cities_Cost_of_Living_and_Average_Prices_API_Cos",
+        "name": "Cities_Cost_of_Living_and_Average_Prices_API_Cost_of_Living_By_Country",
+        "corpus_id": "web:toolbench_tool_740"
+      },
+      {
+        "call_name": "Twelve_Data_VWAP",
+        "name": "Twelve_Data_VWAP",
+        "corpus_id": "web:toolbench_tool_13844"
+      },
+      {
+        "call_name": "calculate_required_sale",
+        "name": "calculate_required_sale",
+        "corpus_id": "code:toolink_tool_927"
+      }
+    ]
+  },
+  "hosted_jev": {
+    "in_design": true,
+    "paused": false,
+    "called": true,
+    "included_in_graph": true,
+    "endpoint": "https://api.typesafe.ai/v1/systemone",
+    "model": "jev-1.13.0",
+    "modal_cost_usd": 0.0,
+    "api_cost_usd": 0.0008491140000000001,
+    "api_input_tokens": 20217,
+    "api_output_tokens": 3752,
+    "reason": "Hosted Jev chose one tool from the same 50-tool menu. Accuracy is whether that choice matches the frontier model's full-menu call. The API bill is separate from Modal and was not a reason to spend more GPU credit.",
+    "rank_cache_queries": 90,
+    "rank_cache_api_cost_usd": 0.009787092,
+    "sample_api_cost_usd": 0.0008491140000000001
+  },
+  "hosted_jev_included": true,
+  "hosted_jev_reason": "Hosted Jev chose one tool from the same 50-tool menu. Accuracy is whether that choice matches the frontier model's full-menu call. The API bill is separate from Modal and was not a reason to spend more GPU credit.",
+  "accuracy_hits": 6,
+  "sample_size_target": 90,
+  "app_id": "ap-zPKUUqLg9jSfeMpiTWiqGU",
+  "quantization_method": "awq_marlin"
 }
