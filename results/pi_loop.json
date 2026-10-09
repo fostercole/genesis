@@ -1,0 +1,16 @@
+{
+  "ran": false,
+  "cursor_billing_worked": false,
+  "task_count": 0,
+  "planned_task_count": 30,
+  "task_count_shrunk": false,
+  "spend_usd": 0,
+  "hard_cap_usd": 15,
+  "voyage": "absent",
+  "anthropic_key_present": false,
+  "model": null,
+  "methods": [],
+  "transcripts": [],
+  "graph": null,
+  "stop_reason": "Cursor billing did not run. The login at ~/.config/cursor/auth.json authenticates as a session, and `agent status` succeeds, but `agent models` and a one-line `agent -p` ask are rejected with permission_denied: the session token is scoped to Origin CLI usage and is not permitted on the model endpoint. The environment CURSOR_AUTH_TOKEN is the same kind of Origin session token and fails the same way. pi-cursor-agent was not given a separate subscription token. No Anthropic API key is in the environment or in local config files, so the paid Sonnet fallback was not used. No Voyage key is present, so the Voyage arm was not added. Nothing was sent to a model, so there is no token count and no Sonnet bill. The 2,000-row dev set was not re-scored."
+}
