@@ -5380,3 +5380,829 @@ Menu: Quandl_Get_filtered_time_series_data, stock_combine_data, stock_get_stock_
 {"name": "stock_get_stock_earnings_data", "arguments": {"ticker": "AAPL"}}
 </tool_call>
 ```
+
+## train_146848
+
+I'm interested in joining a VRising server. Can you provide me with the connect IP, description, and player count for the server located at IP address 185.225.233.110 and port 30015? I'd appreciate it!
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | VRising_Server_Query_API_connectIP_185_225_233_1 | yes | 3.01 |
+| keyword search | 10 | Get_Server_Details | no | 2.50 |
+| original Open-Jev-2B top 10 | 10 | alldetails_185_225_233_110_30015 | no | 2.45 |
+| tuned 2B top 10 | 10 | alldetails_185_225_233_110_30015 | no | 2.47 |
+| hosted Jev top 10 | 10 | alldetails_185_225_233_110_30015 | no | 2.43 |
+
+### full menu
+
+Menu: alldetails_185_225_233_110_30015, playercount_185_225_233_110_30015, VRising_Server_Query_API_connectIP_185_225_233_1, VRising_Server_Query_API_playerCount_185_225_233, Get_Server_Connection_Information, VRising_Server_Query_API_description_185_225_233, VRising_Server_Query_API_specificPlayer_185_225_, VRising_Server_Query_API_keyDetails_185_225_233_, VRising_Server_Query_API_allDetails_185_225_233_, Get_Server_Details, VRising_Server_Query_API_players_185_225_233_110, players_185_225_233_110_30015, Get_IP_Addresses, ViewDNS_Traceroute, ssh_connect, Get_Player_Count, vrising_server_query_api, ip, lookupIP, ViewDNS_Reverse_DNS_Lookup, Traceroute_API, IP_Geolocation_v3_Get_IP_Geolocation, IP_Geolocation_Find_IP_Location_and_IP_Info_Get_, Get_IP_Geolocation, get_ip_geolocation, Spott_Get_place_by_IP, Get_Place_by_IP, ViewDNS_Port_Scanner, NS_Lookup, get_the_addresses_by_ip, Generate_IP_Address, Get_User_s_IP_Address, getIP, getIPInfo, IPGeolocation, ip_country, getGeolocation, is_valid_ip_address, get_ip_zipcode, View_IP_address, v1_iplookup, IP_to_Income_IP_address, getUserCurrency, getUserLanguage, getPorts, getGeoIP, getIpInfo, blockit, get_ip_location, VRising_Server_Query_API_discord_185_225_233_110
+
+```
+<tool_call>
+{"name": "VRising_Server_Query_API_connectIP_185_225_233_1", "arguments": {}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: alldetails_185_225_233_110_30015, playercount_185_225_233_110_30015, VRising_Server_Query_API_connectIP_185_225_233_1, VRising_Server_Query_API_playerCount_185_225_233, Get_Server_Connection_Information, VRising_Server_Query_API_description_185_225_233, VRising_Server_Query_API_specificPlayer_185_225_, VRising_Server_Query_API_keyDetails_185_225_233_, VRising_Server_Query_API_allDetails_185_225_233_, Get_Server_Details
+
+```
+<tool_call>
+{"name": "Get_Server_Details", "arguments": {"type": "object", "properties": {"ip": "185.225.233.110", "port": "30015"}, "required": "ip,port"}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: vrising_server_query_api, Get_Server_Details, alldetails_185_225_233_110_30015, Get_Server_Connection_Information, getIPInfo, playercount_185_225_233_110_30015, getIP, VRising_Server_Query_API_allDetails_185_225_233_, VRising_Server_Query_API_connectIP_185_225_233_1, players_185_225_233_110_30015
+
+```
+<tool_call>
+{"name": "alldetails_185_225_233_110_30015", "arguments": {"ip": "185.225.233.110", "port": "30015"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: vrising_server_query_api, alldetails_185_225_233_110_30015, VRising_Server_Query_API_allDetails_185_225_233_, VRising_Server_Query_API_connectIP_185_225_233_1, VRising_Server_Query_API_description_185_225_233, VRising_Server_Query_API_keyDetails_185_225_233_, playercount_185_225_233_110_30015, VRising_Server_Query_API_playerCount_185_225_233, Get_Server_Details, Get_Server_Connection_Information
+
+```
+<tool_call>
+{"name": "alldetails_185_225_233_110_30015", "arguments": {"ip": "185.225.233.110", "port": "30015"}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: alldetails_185_225_233_110_30015, VRising_Server_Query_API_allDetails_185_225_233_, vrising_server_query_api, playercount_185_225_233_110_30015, VRising_Server_Query_API_connectIP_185_225_233_1, VRising_Server_Query_API_playerCount_185_225_233, Get_Server_Connection_Information, VRising_Server_Query_API_description_185_225_233, VRising_Server_Query_API_specificPlayer_185_225_, VRising_Server_Query_API_keyDetails_185_225_233_
+
+```
+<tool_call>
+{"name": "alldetails_185_225_233_110_30015", "arguments": {"ip": "185.225.233.110", "port": "30015"}}
+</tool_call>
+```
+
+## train_12341
+
+I'm planning to send money to a bank in Australia and require the SWIFT code. Can you provide me with the SWIFT code, country, bank, and branch of the National Australia Bank?
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | Get_Bank_SWIFT_Code | yes | 2.91 |
+| keyword search | 10 | Get_Bank_SWIFT_Code | yes | 1.68 |
+| original Open-Jev-2B top 10 | 10 | Get_Bank_SWIFT_Code | yes | 1.69 |
+| tuned 2B top 10 | 10 | Get_Bank_SWIFT_Code | yes | 1.69 |
+| hosted Jev top 10 | 10 | Get_Bank_SWIFT_Code | yes | 1.71 |
+
+### full menu
+
+Menu: Get_Bank_SWIFT_Code, Exchange_rates_live_Get_individual_bank, Fund_Transfer_GetBankDetailsFT, GetBankDetailsFT, Get_SWIFT_Codes_by_Country, Bank_SWIFT_codes_SWIFT_code, Bank_SWIFT_codes_SWIFT_codes_by_country, searchBank, GetLoanInterestRate, online_banking, listAvailableCurrencies, list_all_countries, Billboard_API_Australia_Songs, Get_Bank_Attributes_by_Group, FinHost_account_details_account, Bank_Account_Verification, get_individual_bank, swift_code, Verify_Indian_Bank_Account, bank_login, Retrieve_Random_Bank_by_ID, Get_Bank_Sector_Groups, Get_Bank_Attributes_Groups, Argaam_Data_APIs_Free_Get_a_List_of_Bank_Sector_, Argaam_Data_APIs_Free_Get_a_List_of_Bank_Attribu, Bank_Card_BIN_Number_Check, notify_user_balance, getBankHolidayDetails, getProjectData, query_bank_customer_service, Country_Code_Extractor, Deposit_Nominal_Bank, DeleteBankAccount, U_S_Economic_Indicators_Prime_Loan_Rates, get_loan_interest_rate, bank_balance_query, checkAccountBalance, verifyBankAccount, getBankHolidaysByYear, export_transactions, transaction_record_query, random_bank_by_id, swift_codes_by_country, Australia_Scheduled_Flights_Growth_API, ScrapTik_Send_SMS, Get_Banks_by_Country, TheClique_TuneFind_for_Details, Mocking_Rock_Get_Countrywise_city_data, Get_Bank_Information, Bank_SWIFT_codes_Banks_by_country
+
+```
+<tool_call>
+{"name": "Get_Bank_SWIFT_Code", "arguments": {"type": "National Australia Bank", "properties": "Australia", "required": "SWIFT code, country, bank, and branch"}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: Get_Bank_SWIFT_Code, Exchange_rates_live_Get_individual_bank, Fund_Transfer_GetBankDetailsFT, GetBankDetailsFT, Get_SWIFT_Codes_by_Country, Bank_SWIFT_codes_SWIFT_code, Bank_SWIFT_codes_SWIFT_codes_by_country, searchBank, GetLoanInterestRate, online_banking
+
+```
+<tool_call>
+{"name": "Get_Bank_SWIFT_Code", "arguments": {"type": "National Australia Bank", "properties": "Australia", "required": "SWIFT code, country, bank, and branch"}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: Get_Banks_by_Country, searchBank, swift_codes_by_country, Bank_SWIFT_codes_Banks_by_country, Get_Bank_SWIFT_Code, Fund_Transfer_GetBankDetailsFT, Get_SWIFT_Codes_by_Country, GetBankDetailsFT, Get_Bank_Attributes_by_Group, Get_Bank_Attributes_Groups
+
+```
+<tool_call>
+{"name": "Get_Bank_SWIFT_Code", "arguments": {"type": "National Australia Bank", "properties": "Australia", "required": "SWIFT code, country, bank, and branch"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: Get_Bank_SWIFT_Code, Bank_SWIFT_codes_SWIFT_code, swift_code, Get_Banks_by_Country, Get_Bank_Attributes_by_Group, Bank_SWIFT_codes_SWIFT_codes_by_country, Get_SWIFT_Codes_by_Country, Bank_SWIFT_codes_Banks_by_country, Get_Bank_Information, searchBank
+
+```
+<tool_call>
+{"name": "Get_Bank_SWIFT_Code", "arguments": {"type": "National Australia Bank", "properties": "Australia", "required": "SWIFT code, country, bank, and branch"}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: Get_Bank_SWIFT_Code, Get_Banks_by_Country, searchBank, Bank_SWIFT_codes_Banks_by_country, Bank_SWIFT_codes_SWIFT_code, Get_SWIFT_Codes_by_Country, Bank_SWIFT_codes_SWIFT_codes_by_country, swift_codes_by_country, Exchange_rates_live_Get_individual_bank, Fund_Transfer_GetBankDetailsFT
+
+```
+<tool_call>
+{"name": "Get_Bank_SWIFT_Code", "arguments": {"type": "National Australia Bank", "properties": "Australia", "required": "SWIFT code, country, bank, and branch"}}
+</tool_call>
+```
+
+## train_53782
+
+I'm a writer working on an article about anime quotes. Can you provide me with a diverse range of random quotes from different anime shows? It would be great if the quotes cover various themes like love, friendship, and perseverance.
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | Get_10_Random_Anime_Quotes | yes | 2.34 |
+| keyword search | 10 | Get_10_Random_Anime_Quotes | yes | 1.08 |
+| original Open-Jev-2B top 10 | 10 | Get_10_Random_Anime_Quotes | yes | 1.64 |
+| tuned 2B top 10 | 10 | Get_10_Random_Anime_Quotes | yes | 1.01 |
+| hosted Jev top 10 | 10 | Get_10_Random_Anime_Quotes | yes | 1.08 |
+
+### full menu
+
+Menu: Get_Anime_Quotes, Get_Random_Anime_Quotes, Get_10_Random_Anime_Quotes, get_quotes_by_anime_title, Get_Anime_Quotes_by_Character, love_quote, Search_Anime_Quotes, Get_Anime_Quotes_by_Character_Name, get_quotes_by_character_name, Get_Anime_Quotes_with_Pagination, Anime_Quotes_v4_Get_quotes_by_anime_title, Anime_Quotes_Get_quotes_by_anime_title, Olato_Quotes_Success_Quote, Olato_Quotes_Love_Quote, Olato_Quotes_Motivation_Quote, Get_Recent_Anime_Quotes_with_Pagination, Love_Quotes_by_LoveMelon_getLoveQuotes, Quotes, Get_All_Anime, Get_Quotes_by_Year, Get_Random_Quotes, Get_Movie_and_TV_Show_Quotes, v1_quotes, Get_Quotes_by_Page, Random_Quotes_V1_Quotes, MetaAPI_Mindfulness_Quotes_getMindfulnessQuote, getLoveQuotes, Get_Quotes_Categories, random_quote, motivation_quote, Anime_Quotes_Get_10_random_quotes, Anime_Quotes_v4_Get_10_random_quotes, success_quote, get_quote_by_year, Success_Quote_API, get_quotes_by_source, Quotes_by_API_Ninjas_v1_quotes, Get_F1_Driver_Quotes, getBookDetails, Get_a_Random_Anime_Quote, Anime_List, get_quotes_by_specific_author, Get_all_quotes, Get_All_Motivational_Quotes, compare_repairs, Retrieve_Quotes_by_Tag, World_of_Quotes_Get_Quotes_By_Specific_Author, World_of_Quotes_Get_Quotes_By_Specific_Category, Quotes_By_Authors, Search_Quotes
+
+```
+<tool_call>
+{"name": "Get_10_Random_Anime_Quotes", "arguments": {}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: Get_Anime_Quotes, Get_Random_Anime_Quotes, Get_10_Random_Anime_Quotes, get_quotes_by_anime_title, Get_Anime_Quotes_by_Character, love_quote, Search_Anime_Quotes, Get_Anime_Quotes_by_Character_Name, get_quotes_by_character_name, Get_Anime_Quotes_with_Pagination
+
+```
+<tool_call>
+{"name": "Get_10_Random_Anime_Quotes", "arguments": {}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: Get_Random_Anime_Quotes, Anime_Quotes_v4_Get_10_random_quotes, Anime_Quotes_Get_10_random_quotes, Get_10_Random_Anime_Quotes, Get_Random_Quotes, Get_Movie_and_TV_Show_Quotes, Random_Quotes_V1_Quotes, v1_quotes, Quotes, Get_a_Random_Anime_Quote
+
+```
+<tool_call>
+{"name": "Get_10_Random_Anime_Quotes", "arguments": {"type": "diverse", "properties": "themes", "required": "love, friendship, perseverance"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: Get_Anime_Quotes, Get_Random_Anime_Quotes, Get_10_Random_Anime_Quotes, Get_a_Random_Anime_Quote, Anime_Quotes_Get_quotes_by_anime_title, Anime_Quotes_v4_Get_quotes_by_anime_title, Quotes, v1_quotes, Get_All_Anime, get_quotes_by_anime_title
+
+```
+<tool_call>
+{"name": "Get_10_Random_Anime_Quotes", "arguments": {}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: Get_Random_Anime_Quotes, Get_10_Random_Anime_Quotes, Search_Anime_Quotes, Anime_Quotes_v4_Get_10_random_quotes, random_quote, Get_a_Random_Anime_Quote, World_of_Quotes_Get_Quotes_By_Specific_Category, Get_Anime_Quotes, Get_Anime_Quotes_with_Pagination, Get_Random_Quotes
+
+```
+<tool_call>
+{"name": "Get_10_Random_Anime_Quotes", "arguments": {}}
+</tool_call>
+```
+
+## train_117223
+
+I have some pending trades for my freefloat strategies. Can you give me the details of these trades? Additionally, fetch the stock history of GOOG on NASDAQ for February 1, 2023.
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | FreeFloatUs_trades_pending, Stocks_Get_the_stock_history_by_exchange_code_an | yes | 4.12 |
+| keyword search | 10 | FreeFloatUs_trades_pending | yes | 0.86 |
+| original Open-Jev-2B top 10 | 10 | FreeFloatUs_trades_pending, Stocks_Get_the_stock_history_by_exchange_code_an | yes | 2.69 |
+| tuned 2B top 10 | 10 | FreeFloatUs_trades_pending, Stocks_Get_the_stock_history_by_exchange_code_an | yes | 2.69 |
+| hosted Jev top 10 | 10 | FreeFloatUs_trades_pending, Stocks_Get_the_stock_history_by_exchange_code_an | yes | 2.25 |
+
+### full menu
+
+Menu: FreeFloatUs_trades_pending, Get_Pending_Trades_for_Freenumber_Strategies, Get_Trades_by_Day, Get_Trades, update_object_dict, Recent_Trades_List, Bybit_Public_Trading_Records_USDT, Crypto_Markets_Recent_Trades_List, Get_Trades_by_ISIN, Crypto_Markets_Compressed_Aggregate_Trades_List, Crypto_Markets_Old_Trade_Lookup, Cryptocurrency_Financial_Data_trades, Compressed_Aggregate_Trades_List, getProductTrades, Instagram_Bulk_Profile_Scrapper_Music_Search_by_, getStreamingData, Get_Recent_Trades, getTradesData, recent_trades_list, GetTrades, AG_Amazon_Data_Web_Scraper_Get_Amazon_Search_Res, GET_person_person_id_tv_credits, Ultimate_Tennis_Tournament_List, Disposable_Email_Validation_Validate_domain_or_e, stock_earnings-history_stock, AION_List_my_Bots, League_of_Legends_API_GET_Champion_details, Cheap_Translate_goo_translate_languages, FreeFloatUs_portfolio, ufc_fight_night_rozenstruik_vs_almeida_may_13_20, ufc_fight_night_dern_vs_hill_may_20_2023, ufc_fight_night_kara_france_vs_albazi_june_03_20, Currencies_And_Countries_Convert_Get_Symbol, SEC_Filings_Insider_Trades, Validate_domain_or_email_address, Amazon_Turkey_Data_Scrapeer_Get_Product_Offers_i, Amazon_Turkey_Data_Scrapeer_Get_Product_Reviews_, event_details, Insider_Trades_API, ufc_fight_night_holloway_vs_allen_april_15_2023, Get_Stock_Upgrade_and_Downgrade_History, Stocks_Get_the_stock_history_by_exchange_code_an, Plate_Detection_Detection_of_Plates_and_Faces, stock_index_trend, Football_v2_SquadName, Crypto_Prices_API_Prices_and_up_and_down, Earnings_History, Ultimate_Tennis_Player_Ranking_History_by_ID, Stocks_Get_the_stock_history_by_code, Pack_Send_api_Tracking
+
+```
+<tool_call>
+{"name": "FreeFloatUs_trades_pending", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "Stocks_Get_the_stock_history_by_exchange_code_an", "arguments": {"exchange_code": "NASDAQ", "stock_code": "GOOG", "start_date": "2023-02-01", "end_date": "2023-02-01"}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: FreeFloatUs_trades_pending, Get_Pending_Trades_for_Freenumber_Strategies, Get_Trades_by_Day, Get_Trades, update_object_dict, Recent_Trades_List, Bybit_Public_Trading_Records_USDT, Crypto_Markets_Recent_Trades_List, Get_Trades_by_ISIN, Crypto_Markets_Compressed_Aggregate_Trades_List
+
+```
+<tool_call>
+{"name": "FreeFloatUs_trades_pending", "arguments": {}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: GetTrades, FreeFloatUs_trades_pending, Stocks_Get_the_stock_history_by_exchange_code_an, Stocks_Get_the_stock_history_by_code, FreeFloatUs_portfolio, getProductTrades, Get_Pending_Trades_for_Freenumber_Strategies, Compressed_Aggregate_Trades_List, getStreamingData, Cryptocurrency_Financial_Data_trades
+
+```
+<tool_call>
+{"name": "FreeFloatUs_trades_pending", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "Stocks_Get_the_stock_history_by_exchange_code_an", "arguments": {"exchange_code": "NASDAQ", "stock_code": "GOOG", "start_date": "2023-02-01", "end_date": "2023-02-01"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: FreeFloatUs_trades_pending, Get_Pending_Trades_for_Freenumber_Strategies, Stocks_Get_the_stock_history_by_exchange_code_an, Cryptocurrency_Financial_Data_trades, FreeFloatUs_portfolio, Stocks_Get_the_stock_history_by_code, Get_Trades, GetTrades, Get_Trades_by_Day, Get_Recent_Trades
+
+```
+<tool_call>
+{"name": "FreeFloatUs_trades_pending", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "Stocks_Get_the_stock_history_by_exchange_code_an", "arguments": {"exchange_code": "NASDAQ", "stock_code": "GOOG", "start_date": "2023-02-01", "end_date": "2023-02-01"}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: FreeFloatUs_trades_pending, Stocks_Get_the_stock_history_by_exchange_code_an, Get_Pending_Trades_for_Freenumber_Strategies, Get_Trades_by_Day, Get_Trades, update_object_dict, Recent_Trades_List, Bybit_Public_Trading_Records_USDT, Crypto_Markets_Recent_Trades_List, Get_Trades_by_ISIN
+
+```
+<tool_call>
+{"name": "FreeFloatUs_trades_pending", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "Stocks_Get_the_stock_history_by_exchange_code_an", "arguments": {"exchange_code": "NASDAQ", "stock_code": "GOOG", "date": "2023-02-01"}}
+</tool_call>
+```
+
+## train_15098
+
+I'm planning to start reading a new webcomic and I'm interested in the comic titled 'The Last Guardian'. Can you give me a list of episodes for this comic along with the photo links? Additionally, suggest some similar comics that I might enjoy.
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | originals_episodes_list, originals_titles_get_recommend | yes | 3.88 |
+| keyword search | 10 | originals_episodes_list, originals_titles_get_recommend | yes | 2.52 |
+| original Open-Jev-2B top 10 | 10 | Get_Comic_Episodes, canvas_titles_get_recommend | no | 2.22 |
+| tuned 2B top 10 | 10 | Get_Comic_Episodes, Get_Similar_Comics | no | 2.35 |
+| hosted Jev top 10 | 10 | Get_Episode_and_Photo_Links, Get_Similar_Comics | no | 3.41 |
+
+### full menu
+
+Menu: Get_Comic_Episodes, originals_titles_get_recommend, canvas_titles_get_recommend, originals_episodes_list, comics_character_appearances, Get_Similar_Comics, Webtoon_originals_episodes_list, Webtoon_canvas_episodes_list, search_wikipedia, Get_Comic_Information, Get_Episode_and_Photo_Links, Get_Originals_Titles_by_Rank, ClickMeter_List_of_datapoint_health_statuses, Cinema_API_Get_Movie_ID_By_Title, Instagram_Downloader_Reel_Video_Post_Downloader_, Instagram_Reels_and_post_Downloader_Reels_Downlo, Get_Webtoon_Home_Data, ReadingListName2ID, Webtoon_canvas_titles_get_info, Webtoon_originals_titles_get_info, Disposable_Email_Validation_Validate_domain_or_e, Get_Guardian_Raids, Web_Search_autoComplete, League_of_Legends_API_GET_Champion_details, Suggest, Wikipedia_Search_API, Get_Similar_Companies, FastYTAPI_Recommended_channels, Webtoon_canvas_home, Titles_with_Changed_Episodes, Car_Utils_Decode_VIN, Watchmode_Titles_with_Changed_Episodes, Steam_Store_API_Items_by_tag, League_of_Legends_API_GET_champions, Currencies_And_Countries_Convert_Get_Symbol, Facebook_Video_and_Reel_Downloader_Download_Vide, feeds_list_similarities, suggestAcquisition, canvas_episodes_get_info, originals_episodes_get_info, WonderboyAPI_Date_and_Time_of_last_update, Validate_domain_or_email_address, Get_Similar_TV_Shows, Spotify_Scraper_Get_Episode_Downloadable_Audio, Instagram_Bulk_Profile_Scrapper_Music_Search_by_, SofaScores_Suggest, Steam_Store_API_Language_list, TTSKraken_List_Speakers, Get_F1_Driver_Quote_Author_with_Photo, Webtoon_originals_titles_get_recommend
+
+```
+<tool_call>
+{"name": "originals_episodes_list", "arguments": {"titleno": "The Last Guardian", "language": "en", "pagesize": "100", "startindex": "0"}}
+</tool_call>
+<tool_call>
+{"name": "originals_titles_get_recommend", "arguments": {"titleno": "The Last Guardian", "language": "en"}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: Get_Comic_Episodes, originals_titles_get_recommend, canvas_titles_get_recommend, originals_episodes_list, comics_character_appearances, Get_Similar_Comics, Webtoon_originals_episodes_list, Webtoon_canvas_episodes_list, search_wikipedia, Get_Comic_Information
+
+```
+<tool_call>
+{"name": "originals_episodes_list", "arguments": {"titleno": "The Last Guardian", "language": "en", "pagesize": "100", "startindex": "0"}}
+</tool_call>
+<tool_call>
+{"name": "originals_titles_get_recommend", "arguments": {"titleno": "The Last Guardian", "language": "en"}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: originals_episodes_list, canvas_episodes_get_info, Webtoon_canvas_episodes_list, Webtoon_originals_episodes_list, Webtoon_originals_titles_get_info, Webtoon_canvas_titles_get_info, canvas_titles_get_recommend, Get_Episode_and_Photo_Links, Get_Comic_Episodes, Get_Comic_Information
+
+```
+<tool_call>
+{"name": "Get_Comic_Episodes", "arguments": {"type": "The Last Guardian", "properties": "episodes, photo_links"}}
+</tool_call>
+<tool_call>
+{"name": "canvas_titles_get_recommend", "arguments": {"titleno": "The Last Guardian", "language": "en"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: originals_episodes_list, Get_Episode_and_Photo_Links, Get_Similar_Comics, Get_Comic_Episodes, originals_titles_get_recommend, canvas_titles_get_recommend, canvas_episodes_get_info, Webtoon_originals_episodes_list, Webtoon_originals_titles_get_recommend, Webtoon_canvas_episodes_list
+
+```
+<tool_call>
+{"name": "Get_Comic_Episodes", "arguments": {"type": "The Last Guardian", "properties": "episodes, photo_links"}}
+</tool_call>
+<tool_call>
+{"name": "Get_Similar_Comics", "arguments": {"type": "The Last Guardian", "properties": "similar_comics"}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: Get_Comic_Episodes, Get_Episode_and_Photo_Links, Webtoon_originals_episodes_list, Webtoon_canvas_episodes_list, originals_episodes_list, canvas_episodes_get_info, Get_Similar_Comics, canvas_titles_get_recommend, Get_Comic_Information, originals_episodes_get_info
+
+```
+<tool_call>
+{"name": "Get_Episode_and_Photo_Links", "arguments": {"type": "The Last Guardian", "properties": "episodes, photo_links", "required": "The Last Guardian"}}
+</tool_call>
+<tool_call>
+{"name": "Get_Similar_Comics", "arguments": {"type": "The Last Guardian", "properties": "similar_comics", "required": "The Last Guardian"}}
+</tool_call>
+```
+
+## train_81981
+
+I want to surprise my family with a beach vacation in Thailand. Can you provide me with the cheapest non-stop tickets from Los Angeles to Phuket for a 14-day stay in the month of December? Additionally, recommend some special offers from airline companies for our travel dates. Lastly, suggest some family-friendly activities and attractions in Phuket.
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | cheapest_tickets, Flight_Data_v2_Special_offers, TripAdviceTool | yes | 5.23 |
+| keyword search | 10 | Flight_Data_v2_Cheapest_tickets, Flight_Data_v2_Special_offers, VacationPlanner_activityPoll | no | 4.50 |
+| original Open-Jev-2B top 10 | 10 | Flight_Data_v2_Tickets_for_each_day_of_month | no | 1.67 |
+| tuned 2B top 10 | 10 | cheapest_tickets, Flight_Data_v2_Special_offers | yes | 3.28 |
+| hosted Jev top 10 | 10 | cheapest_tickets, Flight_Data_v2_Special_offers, TripAdviceTool | yes | 3.51 |
+
+### full menu
+
+Menu: Flight_Data_v2_Cheapest_tickets_grouped_by_month, Flight_Data_v2_Tickets_for_each_day_of_month, Non-stop_Tickets, VacationPlanner_budgetCalculator, Cheapest_Flights_by_Month, Flight_Data_v2_Special_offers, Flight_Data_API, Flight_Data_v2_Non_stop_tickets, Flight_Data_v2_Cheapest_tickets, VacationPlanner_activityPoll, cheapest_tickets, Cheapest_Flights, getFruitByFamily, get_all_models_by_brand_and_family, Pack_Send_api_Tracking, Get_All_Models_By_Brand_And_Family, Get_All_Family_By_Brand_Name, family_get_conflict_history, TripAdviceTool, family_activity_find_parks, family_schedule_conflict_resolution_session, Audio-to-Audio, combined_ticket_search, Flight_Integration_Flight, Flight_Integration_Flight_Integration, flight_flight_aggregator_flight, family_activity_get_weather_forecast, listing_availability, Airbnb_listings_Listing_Availability, family_schedule_family_meeting, family_get_conflict_resolution_methods, Instagram_v7_Get_media_id_from_data, Get_Watches_By_Brand_Family_Model, travelItinerary_create, retrieve_LA_prices, dimondevosint_Phone_number_information, get_watches_by_brand_family_model, CryptoInfo_Get_news_over_a_period_of_time, Football_Prediction_Performance_stats_for_past_p, gameslist, MFs_Family_List, Bidirectional_Text_Language_Translation_Detect_L, Football_v2_SquadName, actors_list_born_today, contact_restaurant, Watch_Database_Get_All_Models_By_Brand_And_Famil, Watch_Database_Get_Watches_By_Brand_Family_Model, Watch_Database_Get_All_Family_By_Brand_name, deerb_yb_egami_god_modnar, random_dog_image_by_sub_breed
+
+```
+<tool_call>
+{"name": "cheapest_tickets", "arguments": {"origin": "Los Angeles", "destination": "Phuket", "depart_date": "2023-12-01", "return_date": "2023-12-15", "page": "1", "currency": "USD", "token": "your_api_token"}}
+</tool_call>
+<tool_call>
+{"name": "Flight_Data_v2_Special_offers", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "TripAdviceTool", "arguments": {}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: Flight_Data_v2_Cheapest_tickets_grouped_by_month, Flight_Data_v2_Tickets_for_each_day_of_month, Non-stop_Tickets, VacationPlanner_budgetCalculator, Cheapest_Flights_by_Month, Flight_Data_v2_Special_offers, Flight_Data_API, Flight_Data_v2_Non_stop_tickets, Flight_Data_v2_Cheapest_tickets, VacationPlanner_activityPoll
+
+```
+<tool_call>
+{"name": "Flight_Data_v2_Cheapest_tickets", "arguments": {"route": "Los Angeles to Phuket", "departure_date": "2022-12-01", "return_date": "2022-12-15", "stops": "non-stop"}}
+</tool_call>
+<tool_call>
+{"name": "Flight_Data_v2_Special_offers", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "VacationPlanner_activityPoll", "arguments": {"destination": "Phuket", "family_members": "4", "age_group": "all_ages", "interests": "beaches, water sports, cultural experiences, shopping, dining"}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: Flight_Data_v2_Non_stop_tickets, Flight_Data_v2_Tickets_for_each_day_of_month, Flight_Data_API, flight_flight_aggregator_flight, Non-stop_Tickets, Flight_Integration_Flight, Flight_Data_v2_Cheapest_tickets, Flight_Data_v2_Cheapest_tickets_grouped_by_month, Flight_Integration_Flight_Integration, cheapest_tickets
+
+```
+<tool_call>
+{"name": "Flight_Data_v2_Tickets_for_each_day_of_month", "arguments": {"origin": "Los Angeles", "destination": "Phuket", "month": "December"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: cheapest_tickets, Non-stop_Tickets, Flight_Data_v2_Cheapest_tickets, Flight_Data_v2_Special_offers, Flight_Data_v2_Non_stop_tickets, Flight_Data_API, Flight_Data_v2_Cheapest_tickets_grouped_by_month, Cheapest_Flights, Cheapest_Flights_by_Month, Flight_Data_v2_Tickets_for_each_day_of_month
+
+```
+<tool_call>
+{"name": "cheapest_tickets", "arguments": {"origin": "Los Angeles", "destination": "Phuket", "depart_date": "2022-12-01", "return_date": "2022-12-15", "page": "1", "currency": "USD", "token": "abc123"}}
+</tool_call>
+<tool_call>
+{"name": "Flight_Data_v2_Special_offers", "arguments": {}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: TripAdviceTool, travelItinerary_create, Flight_Data_v2_Non_stop_tickets, Non-stop_Tickets, Flight_Data_v2_Cheapest_tickets, Flight_Data_v2_Cheapest_tickets_grouped_by_month, Flight_Data_v2_Tickets_for_each_day_of_month, cheapest_tickets, Cheapest_Flights_by_Month, Flight_Data_v2_Special_offers
+
+```
+<tool_call>
+{"name": "cheapest_tickets", "arguments": {"origin": "Los Angeles", "destination": "Phuket", "depart_date": "2022-12-01", "return_date": "2022-12-14", "page": "1", "currency": "USD", "token": ""}}
+</tool_call>
+<tool_call>
+{"name": "Flight_Data_v2_Special_offers", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "TripAdviceTool", "arguments": {}}
+</tool_call>
+```
+
+## train_25145
+
+I'm planning a game night with my friends and we need some entertainment. Can you provide us with a random manatee joke and a joke with the highest rating? Additionally, fetch the joke of the day from the 'Entertainment' category and generate a Sponge Bob meme with the text 'Laugh out loud'.
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | entertainment_virtual_game_night | yes | 5.90 |
+| keyword search | 10 | manatee_jokes_random, Get_Joke_of_the_Day_By_Category, Random_Joke_API, Memeados_Sponge_bob | no | 2.99 |
+| original Open-Jev-2B top 10 | 10 | manatee_jokes_random, Random_Joke_API, World_of_Jokes_Get_Joke_of_the_Day_By_Category, sponge_bob | no | 3.13 |
+| tuned 2B top 10 | 10 | manatee_jokes_random, Get_Joke_of_the_Day_By_Category, sponge_bob, Get_Joke | no | 3.09 |
+| hosted Jev top 10 | 10 | manatee_jokes_random, Get_Joke_of_the_Day_By_Category, Get_Joke_of_the_Day, sponge_bob | no | 2.80 |
+
+### full menu
+
+Menu: manatee_jokes_random, Memeados_Sponge_bob, Random_Joke_API, Get_Joke_of_the_Day_By_Category, GetRandomManateeJoke, Get_Random_Joke_By_Category, Random_Dad_Joke, Dad_Jokes_v2_dad_jokes_joke_of_the_day, jokes_random_category_get, generateJoke, entertainment_virtual_game_night, Get_Joke, Humor_Jokes_and_Memes_random_joke, Get_Joke_Property, Get_Joke_of_the_Day, Dark_Humor_Jokes_Get_Joke, getJokeByCategory, Get_Random_Joke, get_joke_of_the_day_by_category, Get_Joke_by_ID, search_for_joke, get_random_joke_by_category, Joke_Test_random_joke, retrieve_info_Get_random_joke, Dad_Jokes_v2_dad_jokes_random, Joke1_random_joke, get_by_id, Dad_Jokes_v2_dad_jokes_search, jokes_Search_for_joke, sponge_bob, Anime_Jokes_Query_joke_using_ID, Get_a_Joke, random_cold_jokes, DaddyJokes_Random, jokes_random, World_of_Jokes_Get_Random_Joke_By_Category, addJoke, World_of_Jokes_Get_Joke_of_the_Day_By_Category, getRandomJoke, query_joke_using_id, jokes_random_get, Create_Joke, random_joke, getJokeOfTheDay, getCustomJoke, Chuck_Norris_jokes_random, Chuck_Norris_Joke_API, Bruno_Jokes_Get_a_Joke, World_of_Jokes_Get_Joke_of_the_Day, manatee_jokes_find_all
+
+```
+<tool_call>
+{"name": "entertainment_virtual_game_night", "arguments": {"type": "game night", "properties": "entertainment", "required": "jokes"}}
+</tool_call>
+{"name": "GetRandomManateeJoke", "arguments": {"type": "manatee", "properties": "joke", "required": "random"}}
+</tool_call>
+{"name": "Get_Joke_of_the_Day_By_Category", "arguments": {"type": "joke", "properties": "category", "required": "Entertainment"}}
+</tool_call>
+{"name": "sponge_bob", "arguments": {"text": "Laugh out loud"}}
+</tool_call>
+{"name": "Get_Joke_Property", "arguments": {"type": "joke", "properties": "rating", "required": "highest"}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: manatee_jokes_random, Memeados_Sponge_bob, Random_Joke_API, Get_Joke_of_the_Day_By_Category, GetRandomManateeJoke, Get_Random_Joke_By_Category, Random_Dad_Joke, Dad_Jokes_v2_dad_jokes_joke_of_the_day, jokes_random_category_get, generateJoke
+
+```
+<tool_call>
+{"name": "manatee_jokes_random", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "Get_Joke_of_the_Day_By_Category", "arguments": {"type": "Entertainment"}}
+</tool_call>
+<tool_call>
+{"name": "Random_Joke_API", "arguments": {"type": "highest_rating"}}
+</tool_call>
+<tool_call>
+{"name": "Memeados_Sponge_bob", "arguments": {"text": "Laugh out loud"}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: manatee_jokes_random, Random_Joke_API, sponge_bob, getJokeByCategory, random_joke, search_for_joke, World_of_Jokes_Get_Joke_of_the_Day_By_Category, retrieve_info_Get_random_joke, Joke_Test_random_joke, getJokeOfTheDay
+
+```
+<tool_call>
+{"name": "manatee_jokes_random", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "Random_Joke_API", "arguments": {"type": "string", "properties": "rating", "required": "highest"}}
+</tool_call>
+<tool_call>
+{"name": "World_of_Jokes_Get_Joke_of_the_Day_By_Category", "arguments": {"category": "Entertainment"}}
+</tool_call>
+<tool_call>
+{"name": "sponge_bob", "arguments": {"text": "Laugh out loud"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: sponge_bob, manatee_jokes_random, GetRandomManateeJoke, get_joke_of_the_day_by_category, Memeados_Sponge_bob, Get_Joke_of_the_Day_By_Category, Get_Joke, Get_Joke_of_the_Day, Get_a_Joke, getJokeOfTheDay
+
+```
+<tool_call>
+{"name": "manatee_jokes_random", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "Get_Joke_of_the_Day_By_Category", "arguments": {"type": "Entertainment", "required": "category"}}
+</tool_call>
+<tool_call>
+{"name": "sponge_bob", "arguments": {"text": "Laugh out loud"}}
+</tool_call>
+<tool_call>
+{"name": "Get_Joke", "arguments": {"type": "highest_rating", "required": "rating"}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: Random_Joke_API, entertainment_virtual_game_night, World_of_Jokes_Get_Joke_of_the_Day_By_Category, get_joke_of_the_day_by_category, manatee_jokes_random, Get_Joke_of_the_Day_By_Category, Get_Random_Joke, Humor_Jokes_and_Memes_random_joke, Get_Joke_of_the_Day, sponge_bob
+
+```
+<tool_call>
+{"name": "manatee_jokes_random", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "Get_Joke_of_the_Day_By_Category", "arguments": {"category": "Entertainment"}}
+</tool_call>
+<tool_call>
+{"name": "Get_Joke_of_the_Day", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "sponge_bob", "arguments": {"text": "Laugh out loud"}}
+</tool_call>
+```
+
+## train_56688
+
+Find the A record and MX record for google.com and the agent details for an agent with ID '12345'.
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | dns_lookup, Get_MX_Record, Realtor_Agent_details | yes | 3.89 |
+| keyword search | 10 | Get_MX_Record, agent_details | no | 1.79 |
+| original Open-Jev-2B top 10 | 10 | dns_lookup, Get_MX_Record, agent_details | yes | 2.72 |
+| tuned 2B top 10 | 10 | dns_lookup, Get_MX_Record, agent_details | yes | 2.65 |
+| hosted Jev top 10 | 10 | dns_lookup, Get_MX_Record, agent_details | yes | 2.68 |
+
+### full menu
+
+Menu: Get_MX_Record, Realtor_Agent_details, Reverse_MX_Record_Lookup_API, Get_Agent_Reviews, Agent_Sleep, Get_Record_Details, Zillow_v2_Agent_Reviews, Agent_StandUp, Agent_WakeUp, agent_details, Get_Agent_Details_by_Username, Get_Embed_Record, Search_Flights_Filter_By_Agent_Id, updateAgentKnowledge, Get_Agent_Recommendations, executeAction, Get_Agent_Prostring, moveAgent, Agent_Eat, Agent_LieOn, Get_Agent_s_Listings, Agent_TypeOn, Get_Agent_s_Rental_Listings, Zillow_Search_Agent, Get_TXT_Record, Agent_Watch, Agent_Greet, Agent_Cut, NPS_Net_Promoter_Score_Read_Organization, walletapi_cloud_Get_customer_details, Zillow_Agent_s_active_listings, Realty_in_US_agents_get_recommendations, Realty_in_US_agents_get_profile, Realty_in_US_agents_get_reviews, Realty_in_US_agents_get_listings, Get_Agent_s_Active_Listings, Agent_SitOn, Agent_PlugOut, random_bank_by_id, Get_DNS_SOA_Record, Agent_Read, recording_audio, Get_Audit_Record, locate_purchase, Agent_Squeeze, Magical_Taske_Fetch_details_of_multiple_records, agents_get_profile, Agent_Drink, Agent_TakeOff, dns_lookup
+
+```
+<tool_call>
+{"name": "dns_lookup", "arguments": {"domain": "google.com", "rtype": "A"}}
+</tool_call>
+<tool_call>
+{"name": "Get_MX_Record", "arguments": {"type": "google.com", "properties": "", "required": ""}}
+</tool_call>
+<tool_call>
+{"name": "Realtor_Agent_details", "arguments": {"is_id": "12345"}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: Get_MX_Record, Realtor_Agent_details, Reverse_MX_Record_Lookup_API, Get_Agent_Reviews, Agent_Sleep, Get_Record_Details, Zillow_v2_Agent_Reviews, Agent_StandUp, Agent_WakeUp, agent_details
+
+```
+<tool_call>
+{"name": "Get_MX_Record", "arguments": {"type": "google.com", "properties": "", "required": ""}}
+</tool_call>
+<tool_call>
+{"name": "agent_details", "arguments": {"is_id": "12345"}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: Get_MX_Record, agent_details, dns_lookup, executeAction, Realtor_Agent_details, Reverse_MX_Record_Lookup_API, Get_TXT_Record, Get_DNS_SOA_Record, Magical_Taske_Fetch_details_of_multiple_records, updateAgentKnowledge
+
+```
+<tool_call>
+{"name": "dns_lookup", "arguments": {"domain": "google.com", "rtype": "A"}}
+</tool_call>
+<tool_call>
+{"name": "Get_MX_Record", "arguments": {"type": "object", "properties": "google.com", "required": "google.com"}}
+</tool_call>
+<tool_call>
+{"name": "agent_details", "arguments": {"is_id": "12345"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: agent_details, dns_lookup, Agent_Read, Realtor_Agent_details, Get_MX_Record, executeAction, Agent_WakeUp, Agent_TypeOn, Agent_Watch, Agent_StandUp
+
+```
+<tool_call>
+{"name": "dns_lookup", "arguments": {"domain": "google.com", "rtype": "A"}}
+</tool_call>
+<tool_call>
+{"name": "Get_MX_Record", "arguments": {"type": "google.com", "properties": "", "required": ""}}
+</tool_call>
+<tool_call>
+{"name": "agent_details", "arguments": {"is_id": "12345"}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: dns_lookup, agent_details, Realtor_Agent_details, Magical_Taske_Fetch_details_of_multiple_records, Get_MX_Record, Reverse_MX_Record_Lookup_API, Get_Agent_Reviews, Agent_Sleep, Get_Record_Details, Zillow_v2_Agent_Reviews
+
+```
+<tool_call>
+{"name": "dns_lookup", "arguments": {"domain": "google.com", "rtype": "A"}}
+</tool_call>
+<tool_call>
+{"name": "Get_MX_Record", "arguments": {"type": "google.com", "properties": "", "required": ""}}
+</tool_call>
+<tool_call>
+{"name": "agent_details", "arguments": {"is_id": "12345"}}
+</tool_call>
+```
+
+## train_148992
+
+I'm planning a movie night with my friends and we're interested in watching some action movies. Can you recommend action movies by generating movie IDs? Additionally, fetch the movie details by searching for a specific movie name. Finally, let's take a fun quiz from ASE's Quiz API to test our movie knowledge.
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | Disney_worlds_action_movies | yes | 2.15 |
+| keyword search | 10 | Get_Action_Movies, Disney_worlds_movie_details | no | 2.58 |
+| original Open-Jev-2B top 10 | 10 | SearchMovieByGenre | no | 0.96 |
+| tuned 2B top 10 | 10 | Get_Action_Movies | no | 1.21 |
+| hosted Jev top 10 | 10 | Get_Action_Movies, FetchMovie, ASE_s_Quiz_API_Get_all_questions | no | 2.38 |
+
+### full menu
+
+Menu: Disney_worlds_action_movies, Get_Action_Movies, Disney_worlds_movie_details, BuildMoviePlaylist, Cinema_API_Get_Movie_ID_By_Title, SearchMovieDatabase, Helioviewer_v1_reQueueMovie, MovieFinder, MovieLookup, Movie_Search_API, Similar_Movies_find_similar, SuggestSimilarMovies, MovieName2ID, MovieNameToID, FindMovieGenre, GetMovieRatings, Get_a_Specific_Movie_by_ID, GET_movie_movie_id_recommendations, Get_Movie_Metadata, Helioviewer_v1_queueMovie, FetchMovie, Random_Chunk_API_getRandomMovie, reQueueMovie, Find_Similar_Movies, Get_Movies_by_Name, MovieSuggestionAPI, Movie_Details, GetTicketPrice, MovieTitle2MovieId, event_setup_movie_screen, Get_Similar_Movies, titles_id, Get_Movie_Reviews, Get_News_for_a_Movie_Title, BookMovieTicket, BookTicket, MovieReviews, MovieDetails, Get_Movie_Aliases_by_ID, title_get_parental_guide, Get_Movie_Details, titles_id_crew, Get_Movie, SearchMovieByGenre, CheckTime, GetMovieDetails, Get_Movie_ID_By_Title, GetMovieByName, Get_Movie_Versions, ASE_s_Quiz_API_Get_all_questions
+
+```
+<tool_call>
+{"name": "Disney_worlds_action_movies", "arguments": {}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: Disney_worlds_action_movies, Get_Action_Movies, Disney_worlds_movie_details, BuildMoviePlaylist, Cinema_API_Get_Movie_ID_By_Title, SearchMovieDatabase, Helioviewer_v1_reQueueMovie, MovieFinder, MovieLookup, Movie_Search_API
+
+```
+<tool_call>
+{"name": "Get_Action_Movies", "arguments": {"type": "action", "properties": "movie_id", "required": "true"}}
+</tool_call>
+<tool_call>
+{"name": "Disney_worlds_movie_details", "arguments": {}}
+</tool_call>
+Note: The request to call a fun quiz from ASE's Quiz API cannot be fulfilled as there is no such tool listed in the provided menu.
+```
+
+### original Open-Jev-2B top 10
+
+Menu: SearchMovieByGenre, MovieSuggestionAPI, Get_Similar_Movies, MovieFinder, MovieLookup, Cinema_API_Get_Movie_ID_By_Title, MovieNameToID, Get_Movies_by_Name, Get_Movie_Metadata, Get_Movie_ID_By_Title
+
+```
+<tool_call>
+{"name": "SearchMovieByGenre", "arguments": {"genre": "action"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: Get_Action_Movies, Disney_worlds_action_movies, FetchMovie, Disney_worlds_movie_details, GetMovieDetails, MovieFinder, MovieLookup, GetMovieByName, SearchMovieByGenre, Get_Movie_ID_By_Title
+
+```
+<tool_call>
+{"name": "Get_Action_Movies", "arguments": {"type": "action", "properties": "", "required": ""}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: Get_Action_Movies, ASE_s_Quiz_API_Get_all_questions, Movie_Search_API, SearchMovieByGenre, Disney_worlds_action_movies, SearchMovieDatabase, FetchMovie, GetMovieDetails, Disney_worlds_movie_details, BuildMoviePlaylist
+
+```
+<tool_call>
+{"name": "Get_Action_Movies", "arguments": {"type": "action", "properties": "", "required": ""}}
+</tool_call>
+<tool_call>
+{"name": "FetchMovie", "arguments": {"MovieName": "Die Hard"}}
+</tool_call>
+<tool_call>
+{"name": "ASE_s_Quiz_API_Get_all_questions", "arguments": {}}
+</tool_call>
+```
+
+## train_99012
+
+I'm organizing a travel meetup and I need to know the statistics for Los Angeles International Airport. Can you provide me with the number of arrivals and departures, as well as the average arrival and departure distances? Additionally, I would like to know the current location of any aircraft within a 25nm radius of Los Angeles. Thank you!
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | Flightera_Flight_Data_airportStatistics, LiveTraffic | yes | 3.89 |
+| keyword search | 10 | FlightSchedule, LiveTraffic | no | 1.85 |
+| original Open-Jev-2B top 10 | 10 | Flightera_Flight_Data_airportStatistics, LiveTraffic | yes | 2.19 |
+| tuned 2B top 10 | 10 | Flightera_Flight_Data_airportStatistics, ADSBx_Flight_Sim_Traffic_LiveTraffic | yes | 2.60 |
+| hosted Jev top 10 | 10 | Flightera_Flight_Data_airportStatistics, LiveTraffic | yes | 2.28 |
+
+### full menu
+
+Menu: retrieve_LA_prices, Search_Departures_by_Route, ADSBx_Flight_Sim_Traffic_LiveTraffic, TIN_Check_TIN_Check, Search_Arrivals_by_Route, TIN_Check_TIN_Lookup, LiveTraffic, ViperScore_Get_managers, FlightSchedule, Amazon_Turkey_Data_Scrapeer_Get_Product_Reviews_, Amazon_Turkey_Data_Scrapeer_Get_Product_Offers_i, Domain_WHOIS_Lookup_API_domain_name, Business_and_company_name_API_Search_Company_By_, Today_s_International_Current_Affairs, Twitter_AIO_Search, Airport_Departures, Flightera_Flight_Data_airportFlights, Flight_Information_for_Hong_Kong_International_A, DataEstado_Listar_todos, flightstatistics, Football_Score_API_get_scores_for_given_date, Fitness_Calculator_Body_Fat_Percentage, Current_Affairs_Of_India_Today_s_International_C, CHAT_GPT_AI_BOT_AI_BOT, airportFlights, Search_Arrivals_by_Flight, Fresh_LinkedIn_Profile_Data_Get_Open_to_Work_Sta, Fresh_LinkedIn_Profile_Data_Get_Open_Profile_Sta, MLB_Data_Game_Type_Info, ViperScore_Get_game_statistics, Instant_Cameroon_News_Retrieve_data, Euro_Millions_Get_all_stats, Cartify_getAllUsers, k, w, Z, Current_Affairs_Of_India_Recent_Current_Affairs, Magical_Taske_Fetch_by_type_and_region, as_to_ue, skto_user, aXsk_to_uPser, k_to_use, askhtotuler, sk_to_ser, resu_ot_ksa, grvcDV, sk_touser, ask_to_useG, asdk_xto_useLr, Flightera_Flight_Data_airportStatistics
+
+```
+<tool_call>
+{"name": "Flightera_Flight_Data_airportStatistics", "arguments": {"ident": "LAX"}}
+</tool_call>
+<tool_call>
+{"name": "LiveTraffic", "arguments": {"latitude": "33.9425", "longitude": "-118.408073"}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: retrieve_LA_prices, Search_Departures_by_Route, ADSBx_Flight_Sim_Traffic_LiveTraffic, TIN_Check_TIN_Check, Search_Arrivals_by_Route, TIN_Check_TIN_Lookup, LiveTraffic, ViperScore_Get_managers, FlightSchedule, Amazon_Turkey_Data_Scrapeer_Get_Product_Reviews_
+
+```
+<tool_call>
+{"name": "FlightSchedule", "arguments": {"airport": "Los Angeles International Airport"}}
+</tool_call>
+<tool_call>
+{"name": "LiveTraffic", "arguments": {"type": "string", "properties": "string", "required": "string"}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: Flightera_Flight_Data_airportStatistics, LiveTraffic, Flightera_Flight_Data_airportFlights, Airport_Departures, Magical_Taske_Fetch_by_type_and_region, Search_Arrivals_by_Route, ADSBx_Flight_Sim_Traffic_LiveTraffic, CHAT_GPT_AI_BOT_AI_BOT, FlightSchedule, k_to_use
+
+```
+<tool_call>
+{"name": "Flightera_Flight_Data_airportStatistics", "arguments": {"ident": "KLAX"}}
+</tool_call>
+<tool_call>
+{"name": "LiveTraffic", "arguments": {"latitude": 33.9425, "longitude": -118.4080}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: LiveTraffic, ADSBx_Flight_Sim_Traffic_LiveTraffic, Flightera_Flight_Data_airportStatistics, CHAT_GPT_AI_BOT_AI_BOT, ask_to_useG, k_to_use, w, resu_ot_ksa, k, Z
+
+```
+<tool_call>
+{"name": "Flightera_Flight_Data_airportStatistics", "arguments": {"ident": "KLAX"}}
+</tool_call>
+<tool_call>
+{"name": "ADSBx_Flight_Sim_Traffic_LiveTraffic", "arguments": {"latitude": 33.9425, "longitude": -118.4080}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: Flightera_Flight_Data_airportStatistics, LiveTraffic, Flightera_Flight_Data_airportFlights, airportFlights, ADSBx_Flight_Sim_Traffic_LiveTraffic, retrieve_LA_prices, Search_Departures_by_Route, TIN_Check_TIN_Check, Search_Arrivals_by_Route, TIN_Check_TIN_Lookup
+
+```
+<tool_call>
+{"name": "Flightera_Flight_Data_airportStatistics", "arguments": {"ident": "KLAX"}}
+</tool_call>
+<tool_call>
+{"name": "LiveTraffic", "arguments": {"latitude": "33.9425", "longitude": "-118.408068"}}
+</tool_call>
+```
+
+## train_195738
+
+Can you fetch a verse from 'John 3:16' in the Bible?
+
+| Arm | Tools shown | Called | Matched full menu | Seconds |
+| --- | ---: | --- | --- | ---: |
+| full menu | 50 | getSpecificVerse | yes | 3.20 |
+| keyword search | 10 | getSpecificVerse | yes | 1.61 |
+| original Open-Jev-2B top 10 | 10 | getSpecificVerse | yes | 1.67 |
+| tuned 2B top 10 | 10 | getSpecificVerse | yes | 1.63 |
+| hosted Jev top 10 | 10 | getVerse | no | 1.26 |
+
+### full menu
+
+Menu: getVerse, Get_Bible_Verse, Verse_Range_API, getverseofachapter, Bible_Search_Get_Verse_by_BookId, Bible_Search_Get_Verse_by_BookName, Random_Bible_Verse, getSpecificVerse, Bible_Search_Random_Verse, GetSingleVerse, Bible_Memory_Verse_Flashcard_Search_Term_Verse_A, GetVerseOfaChapter, get_verse_by_bookname, Complete_Study_Bible_Place_Detail_API, Quran_Com_random, Place_Detail_API, Tiktok_v2_Feeds_by_secUid, Get_Verses_by_BookName, get_verses, verse_verse, Crypto_Prices_API_Prices_and_up_and_down, Twelve_Data_HT_SINE, Get_Quran_Verse, Gis_Engine_Get_districts, Twelve_Data_HT_PHASOR, Bible_Memory_Verse_Flashcard_Search_Term_Count_o, Bible_Memory_Verse_Flashcard_Search_Term_Chapter, Twelve_Data_HT_TRENDLINE, Bhagavad_Gita_v3_Get_verse_details_by_verse_id, Twelve_Data_HT_DCPHASE, Twelve_Data_HT_DCPERIOD, Twelve_Data_HT_TRENDMODE, Gis_Engine_Get_cities, getchapter, Get_Verse_Details_by_Verse_ID, Instagram_Bulk_Profile_Scrapper_Reels_by_Music_I, NIV_Bible_GetSingleVerse, League_Of_Legends_Esports_Get_Vods, League_Of_Legends_Esports_Get_Tournaments_For_Le, Bible_Search_Search_Text, search_all_words_api, Bible_Memory_Verse_Flashcard_Search_for_Verses_c, Hashtag_Trending_Countries_List, All_Cars_Names_Image_and_Variants_Info_Search_Al, League_Of_Legends_Esports_Get_Standings, john_albums_count, Reels_by_Music_Id, Tiktok_v2_Music_by_Id, Get_Verse_Media, tool_49
+
+```
+<tool_call>
+{"name": "getSpecificVerse", "arguments": {"book": "John", "chapter": "3", "verse": "16", "version": "NIV", "language": "en"}}
+</tool_call>
+```
+
+### keyword search
+
+Menu: getVerse, Get_Bible_Verse, Verse_Range_API, getverseofachapter, Bible_Search_Get_Verse_by_BookId, Bible_Search_Get_Verse_by_BookName, Random_Bible_Verse, getSpecificVerse, Bible_Search_Random_Verse, GetSingleVerse
+
+```
+<tool_call>
+{"name": "getSpecificVerse", "arguments": {"book": "John", "chapter": "3", "verse": "16", "version": "NIV", "language": "en"}}
+</tool_call>
+```
+
+### original Open-Jev-2B top 10
+
+Menu: Get_Bible_Verse, GetSingleVerse, getSpecificVerse, NIV_Bible_GetSingleVerse, getVerse, Bible_Search_Get_Verse_by_BookName, GetVerseOfaChapter, get_verses, Get_Verses_by_BookName, Bible_Memory_Verse_Flashcard_Search_for_Verses_c
+
+```
+<tool_call>
+{"name": "getSpecificVerse", "arguments": {"book": "John", "chapter": "3", "verse": "16", "version": "NIV", "language": "en"}}
+</tool_call>
+```
+
+### tuned 2B top 10
+
+Menu: verse_verse, getVerse, getSpecificVerse, GetSingleVerse, Bible_Search_Get_Verse_by_BookName, Get_Bible_Verse, get_verses, NIV_Bible_GetSingleVerse, getverseofachapter, GetVerseOfaChapter
+
+```
+<tool_call>
+{"name": "getSpecificVerse", "arguments": {"book": "John", "chapter": "3", "verse": "16", "version": "NIV", "language": "en"}}
+</tool_call>
+```
+
+### hosted Jev top 10
+
+Menu: getVerse, NIV_Bible_GetSingleVerse, getSpecificVerse, getverseofachapter, Get_Bible_Verse, Verse_Range_API, Bible_Search_Get_Verse_by_BookId, Bible_Search_Get_Verse_by_BookName, Random_Bible_Verse, Bible_Search_Random_Verse
+
+```
+<tool_call>
+{"name": "getVerse", "arguments": {"book": "John", "chapter": "3", "verse": "16"}}
+</tool_call>
+```
