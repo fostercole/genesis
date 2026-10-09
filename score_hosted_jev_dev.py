@@ -8,6 +8,7 @@ frontier chart.
 from __future__ import annotations
 
 import json
+import subprocess
 import threading
 import time
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
@@ -322,7 +323,7 @@ def run_calls(rows: list[dict], api_key: str, rate: float, checkpoint: Checkpoin
                 finished_since_print = 0
         if finished_since_print:
             note_progress()
-    return {"stop_reason": stop_reason, "auth_stop": auth_stop}
+    return {"stop_reason": stop_reason, "auth_stop": auth_stop, "calls": next_index}
 
 
 def collect_scored(rows: list[dict], checkpoint: Checkpoint, cap_stopped: bool) -> list[dict]:
@@ -342,16 +343,21 @@ def hosted_summary(scored: list[dict]) -> dict[str, Any]:
     metrics = aggregate_metrics(scored)
     ranked_counts: dict[str, int] = {}
     choice_matches = 0
+    choice_hits = 0
     for row in scored:
         kind = str(row.get("ranking") or "empty")
         ranked_counts[kind] = ranked_counts.get(kind, 0) + 1
-        if row.get("choice_rank") == 1:
+        choice_rank_value = row.get("choice_rank")
+        if choice_rank_value == 1:
             choice_matches += 1
+        if isinstance(choice_rank_value, int) and choice_rank_value in row["ranks"]:
+            choice_hits += 1
     n_ranked = [int(row.get("n_ranked") or 0) for row in scored]
     return {
         "rows": len(scored),
         "metrics": {key: metrics[key] for key in METRIC_KEYS},
         "top-1": top1_rate(scored),
+        "choice_top-1": choice_hits / len(scored),
         "choice_is_rank1": choice_matches / len(scored),
         "ranking_counts": ranked_counts,
         "n_ranked_min": min(n_ranked),
@@ -405,6 +411,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "Hosted ranks are the API probabilities, highest first. Ties keep menu order.",
         "A response with no probability map uses the single chosen tool as rank 1 and leaves every lower rank empty.",
         "Tools the response does not score stay unranked.",
+        f"The API's own choice was probability rank 1 on {hosted['choice_is_rank1']:.4f} of scored rows.",
+        f"Treating that choice as the top-1 tool, whether or not it was the highest probability, the hit rate is {hosted['choice_top-1']:.4f}.",
         "",
         f"Pre-run estimate: ${report['estimate_usd']:.6f} for {report['estimate_rows']} rows",
         f"at ${INPUT_USD_PER_TOKEN * 1_000_000:.3f} per million input tokens. Output tokens are free.",
@@ -430,8 +438,11 @@ def render_note(report: dict[str, Any]) -> str:
         '  subagentId: "bc-86268829-28b0-5975-9772-c57e6a1022d4"\n'
         "---\n\n"
         + body
-        + f"\nPrefix size: {report['rows_scored']} rows.\n"
-        + f"Cap prefix: {prefix}.\n"
+        + (
+            f"\nThe $5 cap cut the run to a prefix of {report['rows_scored']} rows.\n"
+            if report["prefix"]
+            else "\nThe $5 cap did not cut the run. Every planned row was scored.\n"
+        )
     )
 
 
@@ -455,6 +466,7 @@ def build_report(
         "metrics": hosted["metrics"],
         "top-1": hosted["top-1"],
         "rows": hosted["rows"],
+        "choice_top-1": hosted["choice_top-1"],
         "choice_is_rank1": hosted["choice_is_rank1"],
         "ranking_counts": hosted["ranking_counts"],
         "n_ranked_min": hosted["n_ranked_min"],
@@ -462,7 +474,6 @@ def build_report(
         "model": model_name,
         "per_row": hosted["per_row"],
     }
-    models["hosted_jev"] = hosted_public
     return {
         "status": "complete" if not prefix and failed == 0 else "partial",
         "rows_in_file": rows_in_file,
@@ -597,7 +608,15 @@ def main() -> None:
         output_tokens=output_tokens,
         failed=failed,
     )
-    report["elapsed_seconds"] = time.perf_counter() - started
+    if run.get("calls"):
+        report["elapsed_seconds"] = time.perf_counter() - started
+    else:
+        # The calls already finished. Birth-to-last-write is that run's wall clock.
+        raw = subprocess.check_output(["stat", "-c", "%W %Y", str(CHECKPOINT_PATH)], text=True)
+        birth_s, mtime_s = raw.split()
+        if birth_s != "0":
+            report["elapsed_seconds"] = float(mtime_s) - float(birth_s)
+    report["api_seconds"] = sum(float(row.get("seconds") or 0) for row in scored)
     report["rows_attempted"] = attempted
     RESULT_PATH.write_text(json.dumps(report, indent=2) + "\n")
     TABLE_PATH.write_text(render_markdown(report))
