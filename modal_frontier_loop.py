@@ -411,6 +411,8 @@ def infer(spec: dict) -> dict:
     planned = int(spec["sample_size"])
     n_target = planned
     probe_query_seconds = None
+    probe_arms = 0
+    per_arm_hint = float(spec.get("seconds_per_query_hint") or 0.0) / 4.0
     stop_reason = ""
 
     def checkpoint(done_reason: str) -> dict:
@@ -442,19 +444,15 @@ def infer(spec: dict) -> dict:
         return body
 
     for index, row_id in enumerate(order):
-        if index == 1 and probe_query_seconds is not None:
-            n_target = shrink_after_probe(
-                planned,
-                spent(),
-                probe_query_seconds,
-                hourly,
-                job_cap,
-            )
+        n_here = len(grouped[row_id])
+        per_arm = per_arm_hint
+        if probe_query_seconds is not None and probe_arms:
+            per_arm = max(per_arm, probe_query_seconds / probe_arms)
         if index >= n_target:
             stop_reason = stop_reason or "shrunk_after_probe"
             break
-        if index > 0 and probe_query_seconds is not None:
-            next_cost = probe_query_seconds / 3600 * hourly * 1.25
+        if index > 0 and per_arm > 0:
+            next_cost = per_arm * n_here / 3600 * hourly * 1.15
             if spent() + next_cost > job_cap:
                 stop_reason = "stopped_before_cap"
                 break
@@ -486,8 +484,9 @@ def infer(spec: dict) -> dict:
             stop_reason = stop_reason or "partial_query"
             break
         queries.append({"id": row_id, "query": query_text, "arms": arms_out})
-        if index == 0:
+        if probe_query_seconds is None:
             probe_query_seconds = query_seconds
+            probe_arms = max(1, len(arms_out))
         print(
             json.dumps(
                 {

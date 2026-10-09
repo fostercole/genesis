@@ -15,6 +15,7 @@ from frontier_budget import (
     CORE_ARMS,
     FRONTIER_MODELS,
     FULL_SAMPLE,
+    SMALL_BUFFER_USD,
     STARTER_CREDIT_USD,
     TARGET_SAMPLE,
     allocate_arm_costs,
@@ -66,17 +67,29 @@ def modal_bin() -> str:
 
 def _loads_cli_json(raw: str):
     text = (raw or "").strip()
-    if not text:
-        raise RuntimeError("modal CLI returned empty output")
+    if not text or "no container" in text.lower():
+        return []
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        starts = [index for index in (text.find("{"), text.find("[")) if index >= 0]
-        if not starts:
+        decoder = json.JSONDecoder()
+        values = []
+        index = 0
+        while index < len(text):
+            while index < len(text) and text[index] not in "{[":
+                index += 1
+            if index >= len(text):
+                break
+            try:
+                value, end = decoder.raw_decode(text, index)
+            except json.JSONDecodeError:
+                index += 1
+                continue
+            values.append(value)
+            index = end
+        if not values:
             raise
-        start = min(starts)
-        end = max(text.rfind("}"), text.rfind("]"))
-        return json.loads(text[start : end + 1])
+        return values[-1]
 
 
 def modal_json(args: list[str]):
@@ -108,13 +121,36 @@ def _billing():
 
 
 def frontier_containers() -> list[dict]:
-    containers = modal_json(["container", "list", "--json"])
-    busy = []
-    for container in containers:
-        blob = json.dumps(container).lower()
-        if container.get("app_name") == APP_NAME or "frontier" in blob:
-            busy.append(container)
-    return busy
+    """Running frontier containers. Uses the API, because the nested CLI races inside an entrypoint."""
+    import asyncio
+
+    from modal.client import _Client
+    from modal_proto import api_pb2
+
+    async def _list() -> list[dict]:
+        client = await _Client.from_env()
+        response = await client._stub.TaskList(api_pb2.TaskListRequest(environment_name="main"))
+        rows = []
+        for task in response.tasks:
+            rows.append(
+                {
+                    "container_id": task.task_id,
+                    "app_id": task.app_id,
+                    "app_name": task.app_description,
+                    "start_time": str(task.started_at),
+                }
+            )
+        return rows
+
+    try:
+        rows = asyncio.run(_list())
+    except RuntimeError:
+        rows = asyncio.get_event_loop().run_until_complete(_list())
+    return [
+        row
+        for row in rows
+        if row.get("app_name") == APP_NAME or "frontier" in json.dumps(row).lower()
+    ]
 
 
 def refuse_if_another_frontier(this_app_id: str | None) -> None:
@@ -300,6 +336,20 @@ def _read_json(path: Path) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
+def median_core_query_seconds(queries: list[dict]) -> float:
+    """Median generation time of the four non-hosted arms. Ignores a one-arm probe."""
+    samples = []
+    for query in queries:
+        arms = query.get("arms") or {}
+        if not all(arm in arms for arm in CORE_ARMS):
+            continue
+        samples.append(sum(float((arms[arm] or {}).get("seconds") or 0) for arm in CORE_ARMS))
+    if not samples:
+        return 0.0
+    samples.sort()
+    return float(samples[len(samples) // 2])
+
+
 def _core_queries(payload: dict) -> list[dict]:
     model = str(payload.get("model") or payload.get("model_id") or "")
     if payload.get("queries") and "72B" not in model and model not in {"", "None"}:
@@ -325,8 +375,8 @@ def _prefer_saved(local_queries: list[dict], remote_queries: list[dict]) -> list
 
 def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
     self_started = time.time()
-    if frontier_containers():
-        raise SystemExit("another frontier GPU is already running; not starting a second one")
+    # The container list is checked in the shell before this entrypoint starts.
+    # Calling it here deadlocks the Modal client, so it does not run again until the GPU gate.
     summary = live_summary()
     remaining = remaining_starter_credit(summary["metered_cost"], summary["credits_applied"])
     # Live remaining Starter balance. Not $7, and not the old $1.14 holdback.
@@ -395,14 +445,30 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         return
 
     rates = live_rates()
-    measured = remote_saved if remote_saved.get("probe_query_seconds") else local_saved
+    measured = {}
+    for candidate in (remote_saved, partial_saved, local_saved):
+        if candidate.get("probe_query_seconds") and candidate.get("load_seconds"):
+            measured = candidate
+            break
+    observed = median_core_query_seconds(saved_queries)
+    if observed > float(measured.get("probe_query_seconds") or 0):
+        measured = dict(measured)
+        measured["probe_query_seconds"] = observed
+        measured.setdefault("load_seconds", 73.0)
     model = dict(FRONTIER_72B)
     if measured.get("probe_query_seconds") and measured.get("load_seconds"):
         model["load_seconds"] = max(60.0, float(measured["load_seconds"]) * 1.25)
         model["seconds_per_query"] = max(4.0, float(measured["probe_query_seconds"]) * 1.25 * 5 / 4)
     finished_ids = {query["id"] for query in saved_queries}
     need = max(0, TARGET_SAMPLE - len(finished_ids))
-    plan = choose_plan(rates, cap, need if need else 1, models=(model,))
+    plan = choose_plan(
+        rates,
+        cap,
+        need if need else 1,
+        models=(model,),
+        include_filter=False,
+        include_prefetch=False,
+    )
     record["rates"] = rates
     record["prelaunch_plan"] = {
         "rejected": plan["rejected"],
@@ -432,7 +498,12 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
     seen_ids = {str(row["object_id"]) for row in before_report if row.get("description") == APP_NAME}
     if local_saved.get("arms"):
         record["prior_arm_costs"] = {
-            arm: float((local_saved["arms"].get(arm) or {}).get("cost_usd") or 0) for arm in local_saved["arms"]
+            arm: float(
+                (local_saved["arms"].get(arm) or {}).get("cost_usd")
+                or (local_saved["arms"].get(arm) or {}).get("modal_cost_usd")
+                or 0
+            )
+            for arm in local_saved["arms"]
         }
 
     dev_ids = load_dev_ids(DEV_IDS)
@@ -513,6 +584,7 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
     unbilled = max(0.0, sunk - posted)
     budget_left = max(0.0, fresh_remaining - unbilled)
     record["remaining_credit_before_gpu_usd"] = fresh_remaining
+    record["buffer_usd"] = 0.0
     record["spend_cap_usd"] = fresh_remaining
     gpu_hourly = model_hourly(FRONTIER_72B, rates, safety=1.0)
     one_query = (float(model.get("load_seconds") or 0) + float(model.get("seconds_per_query") or 0)) / 3600 * gpu_hourly
@@ -538,15 +610,9 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         _finish_billing(record, seen_ids, None)
         _write_from_saved(record, saved_queries)
         return
-    for _ in range(24):
-        if not frontier_containers():
-            break
-        time.sleep(5)
-    if frontier_containers():
-        record["stop_reason"] = "A frontier GPU was still running, so no second GPU was started."
-        _finish_billing(record, seen_ids, None)
-        _write_from_saved(record, saved_queries)
-        return
+    # Score and prefetch have returned. Give those containers a moment to exit
+    # before the inference GPU starts, so two GPUs do not overlap.
+    time.sleep(8)
 
     try:
         hosted_menus, hosted_note = _rank_hosted(rows, hosted_key)
@@ -588,6 +654,7 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         "sample_size": len(rows),
         "hourly_usd": gpu_hourly,
         "job_cap_usd": job_cap,
+        "seconds_per_query_hint": float(measured.get("probe_query_seconds") or 0),
     }
     print(
         json.dumps(

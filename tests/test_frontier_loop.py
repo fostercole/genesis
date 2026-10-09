@@ -9,11 +9,13 @@ from frontier_budget import (
     FRONTIER_MODELS,
     allocate_arm_costs,
     choose_plan,
+    job_budget,
     may_launch,
     remaining_starter_credit,
     shrink_after_probe,
     spend_cap,
 )
+from frontier_menu import ARM_LABELS, merge_queries
 from frontier_menu import (
     arm_accuracy,
     bm25_top,
@@ -61,6 +63,19 @@ class FrontierBudgetTests(unittest.TestCase):
         self.assertFalse(may_launch(1.99))
         self.assertTrue(may_launch(2))
         self.assertAlmostEqual(spend_cap(remaining), remaining - 1, places=6)
+        self.assertAlmostEqual(job_budget(3.211), 3.211, places=6)
+        self.assertEqual(job_budget(-1), 0)
+        self.assertNotIn("bm25", ARM_LABELS["bm25"].lower())
+        self.assertEqual(ARM_LABELS["bm25"], "keyword search")
+        self.assertEqual(ARM_LABELS["hosted"], "hosted Jev top 10")
+
+    def test_resume_keeps_finished_arms(self):
+        previous = [{"id": "a", "query": "q", "arms": {"full": {"called": ["x"]}, "bm25": {"called": ["x"]}, "original": {"called": ["y"]}, "tuned": {"called": ["x"]}}}]
+        extra = [{"id": "a", "arms": {"full": {"called": ["nope"]}, "hosted": {"called": ["x"]}}}, {"id": "b", "query": "q2", "arms": {"hosted": {"called": ["z"]}}}]
+        merged = merge_queries(previous, extra)
+        self.assertEqual(merged[0]["arms"]["full"]["called"], ["x"])
+        self.assertEqual(merged[0]["arms"]["hosted"]["called"], ["x"])
+        self.assertEqual(merged[1]["id"], "b")
 
     def test_full_sample_shrinks_before_a_cheaper_model(self):
         plan = choose_plan(RATES, spend_cap_usd=0.9, full_sample=30)
@@ -150,7 +165,7 @@ class FrontierMenuTests(unittest.TestCase):
             write_cost_accuracy_plot(
                 [
                     {"label": "full menu", "cost_usd": 0.4, "accuracy": 1},
-                    {"label": "BM25", "cost_usd": 0.2, "accuracy": 0.5},
+                    {"label": "keyword search", "cost_usd": 0.2, "accuracy": 0.5},
                 ],
                 path,
                 "probe",

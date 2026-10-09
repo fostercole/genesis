@@ -8,12 +8,19 @@ import re
 from pathlib import Path
 from typing import Any
 
-from frontier_budget import ARM_ORDER
+from frontier_budget import ARM_ORDER, CORE_ARMS
 
 K = 10
+ARM_LABELS = {
+    "full": "full menu",
+    "bm25": "keyword search",
+    "original": "original Open-Jev-2B top 10",
+    "tuned": "tuned 2B top 10",
+    "hosted": "hosted Jev top 10",
+}
 MENU_SIZE = 50
 MAX_MODEL_LEN = 8192
-PROMPT_TOKEN_BUDGET = 7000
+PROMPT_TOKEN_BUDGET = 5200
 SYSTEM_PROMPT = (
     "You are a tool-calling assistant. "
     "Call exactly one tool from the menu. "
@@ -180,26 +187,77 @@ def fit_tools(tokenizer, query: str, menu: list[dict], token_budget: int = PROMP
     return best_tools, best_prompt, best_len
 
 
-def arm_menus(named: list[dict], original_scores: list[float], tuned_scores: list[float]) -> dict[str, list[dict]]:
-    return {
+def arm_menus(
+    named: list[dict],
+    original_scores: list[float],
+    tuned_scores: list[float],
+    hosted: list[dict] | None = None,
+) -> dict[str, list[dict]]:
+    menus = {
         "full": list(named),
         "bm25": bm25_top(named, K),
         "original": rank_by_score(named, original_scores, K),
         "tuned": rank_by_score(named, tuned_scores, K),
     }
+    if hosted:
+        menus["hosted"] = list(hosted)
+    return menus
+
+
+def core_done(query: dict) -> bool:
+    arms = query.get("arms") or {}
+    return all(isinstance(arms.get(arm), dict) and "called" in arms[arm] for arm in CORE_ARMS)
+
+
+def has_arm(query: dict, arm: str) -> bool:
+    item = (query.get("arms") or {}).get(arm)
+    return isinstance(item, dict) and "called" in item
+
+
+def merge_queries(previous: list[dict], extra: list[dict]) -> list[dict]:
+    """Keep finished arms. Extra results fill gaps and append new ids."""
+    by_id: dict[str, dict] = {}
+    order: list[str] = []
+    for query in previous:
+        by_id[query["id"]] = {"id": query["id"], "query": query.get("query") or "", "arms": dict(query.get("arms") or {})}
+        order.append(query["id"])
+    for query in extra:
+        if query["id"] not in by_id:
+            by_id[query["id"]] = {"id": query["id"], "query": query.get("query") or "", "arms": {}}
+            order.append(query["id"])
+        dest = by_id[query["id"]]
+        if query.get("query") and not dest.get("query"):
+            dest["query"] = query["query"]
+        for arm, item in (query.get("arms") or {}).items():
+            if arm not in dest["arms"] and isinstance(item, dict) and "called" in item:
+                dest["arms"][arm] = item
+    return [by_id[row_id] for row_id in order]
 
 
 def build_prompts(
     tokenizer,
     rows: list[dict],
     scores_by_id: dict[str, dict[str, list[float]]],
+    hosted_menus: dict[str, list[dict]] | None = None,
+    arms_for: dict[str, tuple[str, ...]] | None = None,
 ) -> list[dict]:
     prompts = []
+    hosted_menus = hosted_menus or {}
     for row in rows:
         named = assign_call_names(row["candidates"])
-        scored = scores_by_id[row["id"]]
-        menus = arm_menus(named, scored["original"], scored["tuned"])
-        for arm in ARM_ORDER:
+        wanted = arms_for[row["id"]] if arms_for and row["id"] in arms_for else ARM_ORDER
+        scored = scores_by_id.get(row["id"]) or {}
+        if any(arm in wanted for arm in ("original", "tuned")):
+            menus = arm_menus(named, scored["original"], scored["tuned"], hosted_menus.get(row["id"]))
+        else:
+            menus = {
+                "full": list(named),
+                "bm25": bm25_top(named, K),
+                "hosted": list(hosted_menus.get(row["id"]) or []),
+            }
+        for arm in wanted:
+            if arm not in menus:
+                continue
             menu = menus[arm]
             tools, prompt, length = fit_tools(tokenizer, row["query"], menu)
             prompts.append(
@@ -250,13 +308,19 @@ def calls_match(truth: list[str], predicted: list[str]) -> bool:
 
 
 def arm_accuracy(queries: list[dict], arm: str) -> float:
-    if not queries:
+    rows = [query for query in queries if arm in (query.get("arms") or {}) and "full" in query["arms"]]
+    if not rows:
         return 0.0
     hits = 0
-    for query in queries:
+    for query in rows:
         truth = query["arms"]["full"]["called"]
         hits += int(calls_match(truth, query["arms"][arm]["called"]))
-    return hits / len(queries)
+    return hits / len(rows)
+
+
+def transcript_arms(queries: list[dict]) -> list[str]:
+    ordered = (*ARM_ORDER, "hosted")
+    return [arm for arm in ordered if any(arm in (query.get("arms") or {}) for query in queries)]
 
 
 def render_transcripts(queries: list[dict], model_id: str, revision: str) -> str:
@@ -276,17 +340,21 @@ def render_transcripts(queries: list[dict], model_id: str, revision: str) -> str
         lines.append("| --- | ---: | --- | --- | ---: |")
         truth = query["arms"]["full"]["called"]
         for arm in ARM_ORDER:
+            if arm not in query["arms"]:
+                continue
             item = query["arms"][arm]
             called = ", ".join(item["called"]) if item["called"] else "(none)"
             matched = "yes" if calls_match(truth, item["called"]) else "no"
             lines.append(
-                f"| {arm} | {item.get('n_shown', '')} | {called} | {matched} | {item.get('seconds', 0):.2f} |"
+                f"| {ARM_LABELS.get(arm, arm)} | {item.get('n_shown', '')} | {called} | {matched} | {item.get('seconds', 0):.2f} |"
             )
         lines.append("")
         for arm in ARM_ORDER:
+            if arm not in query["arms"]:
+                continue
             item = query["arms"][arm]
             names = ", ".join(tool["call_name"] for tool in item.get("shown") or [])
-            lines.append(f"### {arm}")
+            lines.append(f"### {ARM_LABELS.get(arm, arm)}")
             lines.append("")
             lines.append(f"Menu: {names}")
             lines.append("")
