@@ -4,6 +4,9 @@ from __future__ import annotations
 
 STARTER_CREDIT_USD = 30.0
 BUFFER_USD = 1.0
+# Leave this on the account so a query cannot finish the balance at zero.
+SMALL_BUFFER_USD = 0.40
+COMPARISON_CEILING_USD = 7.0
 MIN_REMAINING_TO_LAUNCH_USD = 2.0
 FULL_SAMPLE = 90
 # Published-rate estimates are padded because the probe has not run yet.
@@ -68,7 +71,10 @@ FRONTIER_MODELS = (
 
 FILTER_SCORE_FIXED_SECONDS = 240
 FILTER_SCORE_SECONDS_PER_ROW = 6
-ARM_ORDER = ("full", "bm25", "original", "tuned")
+ARM_ORDER = ("full", "bm25", "original", "tuned", "hosted")
+TARGET_SAMPLE = 30
+# Arms already produced for a saved pair. The hosted menu is added later.
+CORE_ARMS = ("full", "bm25", "original", "tuned")
 
 
 def remaining_starter_credit(
@@ -92,6 +98,63 @@ def may_launch(remaining_credit: float, minimum: float = MIN_REMAINING_TO_LAUNCH
 
 def spend_cap(remaining_credit: float, buffer_usd: float = BUFFER_USD) -> float:
     return float(remaining_credit) - float(buffer_usd)
+
+
+def comparison_cap(
+    remaining_credit: float,
+    already_spent_usd: float = 0.0,
+    ceiling_usd: float = COMPARISON_CEILING_USD,
+    buffer_usd: float = SMALL_BUFFER_USD,
+) -> float:
+    """Dollars the next GPU job may spend.
+
+    The account keeps a small buffer. The comparison itself also stops at the
+    ceiling, counting Modal dollars already spent on it.
+    """
+    room = float(remaining_credit) - float(buffer_usd)
+    ceiling_left = float(ceiling_usd) - float(already_spent_usd)
+    return max(0.0, min(room, ceiling_left))
+
+
+def affordable_sample(
+    cap_usd: float,
+    hourly_usd: float,
+    load_seconds: float,
+    seconds_per_new_query: float,
+    hosted_tail_seconds: float,
+    score_fixed_seconds: float,
+    score_seconds_per_row: float,
+    already_done: int,
+    full_sample: int,
+) -> int:
+    """Largest total sample, including rows already scored, that fits cap_usd."""
+    best = int(already_done)
+    done = int(already_done)
+    for total in range(done, int(full_sample) + 1):
+        new = total - done
+        score_s = 0.0 if new == 0 else float(score_fixed_seconds) + float(score_seconds_per_row) * new
+        infer_s = float(load_seconds) + float(seconds_per_new_query) * new + float(hosted_tail_seconds)
+        cost = (score_s + infer_s) / 3600.0 * float(hourly_usd)
+        if cost <= float(cap_usd):
+            best = total
+        else:
+            break
+    return best
+
+
+def pending_items(items: list[dict], done_pairs: set[tuple[str, str]]) -> list[dict]:
+    """Drop example/arm pairs that already have a frontier call."""
+    return [item for item in items if (item["id"], item["arm"]) not in done_pairs]
+
+
+def job_budget(remaining_credit: float) -> float:
+    """What the next GPU launch may spend: the live remaining Starter balance.
+
+    A one-dollar or two-dollar holdback is what pinned earlier launches near
+    $1.14. The launch uses the live number, and the running job checkpoints
+    if that balance runs out.
+    """
+    return max(0.0, float(remaining_credit))
 
 
 def loaded_hourly(

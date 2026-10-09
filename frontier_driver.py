@@ -12,31 +12,37 @@ from pathlib import Path
 from frontier_budget import (
     ARM_ORDER,
     BUFFER_USD,
+    CORE_ARMS,
     FRONTIER_MODELS,
     FULL_SAMPLE,
-    MIN_REMAINING_TO_LAUNCH_USD,
     STARTER_CREDIT_USD,
+    TARGET_SAMPLE,
     allocate_arm_costs,
     choose_plan,
     filter_hourly,
+    job_budget,
     loaded_hourly,
-    may_launch,
     model_hourly,
     prefetch_hourly,
     remaining_starter_credit,
-    spend_cap,
     timeout_for_cap,
 )
 from frontier_menu import (
+    ARM_LABELS,
     K,
     arm_accuracy,
+    assign_call_names,
     build_prompts,
+    core_done,
+    has_arm,
     load_dev_ids,
     load_jsonl,
+    merge_queries,
     render_transcripts,
     select_rows,
     write_text,
 )
+from hosted_jev import rank_query
 from frontier_plot import write_both
 from pi_loop import ENV_PATH, load_env_file
 
@@ -46,14 +52,12 @@ TRANSCRIPT_PATH = Path("results/frontier_transcripts.md")
 GRAPH_REPO = Path("results/pi-cost-accuracy.png")
 GRAPH_MEDIA = Path("/cursor/stores/bc-c73881fc-461b-4a9f-9679-fb150ab43075/media/pi-cost-accuracy.png")
 LEDGER_PATH = Path("ledger.jsonl")
+PARTIAL_PATH = Path("results/frontier_72b_partial.json")
+HOSTED_RANK_PATH = Path("results/hosted_jev_ranks.json")
 DEV_JSONL = Path("data/dev_bm25_top50.jsonl")
 DEV_IDS = Path("data/dev_2k.ids")
-LABELS = {
-    "full": "full menu",
-    "bm25": "keyword search",
-    "original": "original Open-Jev-2B top 10",
-    "tuned": "tuned 2B top 10",
-}
+LABELS = ARM_LABELS
+FRONTIER_72B = FRONTIER_MODELS[0]
 
 
 def modal_bin() -> str:
@@ -101,6 +105,16 @@ def _billing():
     import modal
 
     return modal.Workspace.from_context().billing
+
+
+def frontier_containers() -> list[dict]:
+    containers = modal_json(["container", "list", "--json"])
+    busy = []
+    for container in containers:
+        blob = json.dumps(container).lower()
+        if container.get("app_name") == APP_NAME or "frontier" in blob:
+            busy.append(container)
+    return busy
 
 
 def refuse_if_another_frontier(this_app_id: str | None) -> None:
@@ -276,11 +290,49 @@ def _base_record(summary: dict, remaining: float, cap: float, hosted: bool) -> d
     }
 
 
+def _read_json(path: Path) -> dict:
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _core_queries(payload: dict) -> list[dict]:
+    model = str(payload.get("model") or payload.get("model_id") or "")
+    if payload.get("queries") and "72B" not in model and model not in {"", "None"}:
+        return []
+    if payload.get("queries") and model and "72B" not in model:
+        return []
+    return [query for query in payload.get("queries") or [] if isinstance(query, dict) and query.get("id") and core_done(query)]
+
+
+def _prefer_saved(local_queries: list[dict], remote_queries: list[dict]) -> list[dict]:
+    """Keep the copy that has more finished pairs, then the one that still has model text."""
+
+    def rank(queries: list[dict]) -> tuple[int, int]:
+        text = 0
+        for query in queries:
+            for item in (query.get("arms") or {}).values():
+                if isinstance(item, dict) and item.get("output"):
+                    text += 1
+        return len(queries), text
+
+    return local_queries if rank(local_queries) >= rank(remote_queries) else remote_queries
+
+
 def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
+    self_started = time.time()
+    if frontier_containers():
+        raise SystemExit("another frontier GPU is already running; not starting a second one")
     summary = live_summary()
     remaining = remaining_starter_credit(summary["metered_cost"], summary["credits_applied"])
-    cap = spend_cap(remaining)
-    hosted = jev_key_nonempty()
+    # Live remaining Starter balance. Not $7, and not the old $1.14 holdback.
+    cap = job_budget(remaining)
+    hosted_key = load_env_file(ENV_PATH).get("JEV_API_KEY", "").strip()
+    hosted = len(hosted_key) > 0
     record = _base_record(summary, remaining, cap, hosted)
     print(
         json.dumps(
@@ -289,37 +341,68 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
                 "remaining_credit_usd": remaining,
                 "spend_cap_usd": cap,
                 "metered_cost_usd": summary["metered_cost"],
-                "hosted_jev_included": hosted,
+                "credits_applied_usd": summary["credits_applied"],
+                "billed_cost_usd": summary["billed_cost"],
+                "hosted_jev_key_nonempty": hosted,
+                "cap_rule": "live_remaining_balance",
             }
         ),
         flush=True,
     )
+    local_saved = _read_json(RESULT_PATH)
+    partial_saved = _read_json(PARTIAL_PATH)
+    remote_saved: dict = {}
+    try:
+        remote_saved = read_saved.remote() or {}
+    except Exception as exc:
+        record["saved_read_error"] = f"{type(exc).__name__}"
+    saved_queries = _prefer_saved(_core_queries(local_saved), _core_queries(remote_saved))
+    saved_queries = _prefer_saved(saved_queries, _core_queries(partial_saved))
+    if not saved_queries and local_saved.get("queries"):
+        saved_queries = [query for query in local_saved["queries"] if isinstance(query, dict) and core_done(query)]
+    record["resumed_query_ids"] = [query["id"] for query in saved_queries]
+    local_done = _core_queries(local_saved)
+    same_local = {query["id"] for query in local_done} == {query["id"] for query in saved_queries} and bool(saved_queries)
+    if same_local:
+        record["prior_spend_usd"] = float(local_saved.get("spend_usd") or 0)
+    else:
+        record["prior_spend_usd"] = float(remote_saved.get("spent_usd_estimated") or 0) if saved_queries else 0.0
+    if saved_queries and record["prior_spend_usd"] and not local_saved.get("arms"):
+        seconds: dict[str, float] = {}
+        for query in saved_queries:
+            for arm, item in (query.get("arms") or {}).items():
+                seconds[arm] = seconds.get(arm, 0.0) + float((item or {}).get("seconds") or 0)
+        if seconds:
+            record["prior_arm_costs"] = allocate_arm_costs(record["prior_spend_usd"], seconds)
     record["hosted_jev"] = {
-        "in_design": True,
-        "paused": True,
+        "in_design": False,
+        "paused": not hosted,
         "called": False,
         "included_in_graph": False,
-        "reason": (
-            "JEV_API_KEY in /workspace/.env is empty. The hosted Jev arm was not called."
-            if not hosted
-            else "The hosted Jev API was not called. The arm stays paused and is omitted from the graph."
-        ),
+        "reason": "" if hosted else "JEV_API_KEY in /workspace/.env is empty. The hosted Jev arm was not called.",
     }
     record["hosted_jev_reason"] = record["hosted_jev"]["reason"]
     record["hosted_jev_included"] = False
-    if not may_launch(remaining):
-        record["stop_reason"] = (
-            f"Remaining Starter credit is ${remaining:.2f}, under $3. No GPU job was launched."
-        )
+    if not hosted:
+        record["stop_reason"] = record["hosted_jev"]["reason"]
         write_json(RESULT_PATH, record)
         print(json.dumps({"event": "stop", "reason": record["stop_reason"]}), flush=True)
         return
+    if cap <= 0:
+        record["paused_for_balance"] = True
+        record["stop_reason"] = f"Remaining Starter credit is ${remaining:.2f}. Checkpointed without a GPU call."
+        _write_from_saved(record, saved_queries)
+        return
 
     rates = live_rates()
-    plan = choose_plan(rates, cap, FULL_SAMPLE)
-    if plan["model"] is not None and plan["model"]["key"] == "qwen72b-awq" and plan["one_query_estimate_usd"] <= cap:
-        plan["sample_size"] = FULL_SAMPLE
-        plan["shrunk"] = False
+    measured = remote_saved if remote_saved.get("probe_query_seconds") else local_saved
+    model = dict(FRONTIER_72B)
+    if measured.get("probe_query_seconds") and measured.get("load_seconds"):
+        model["load_seconds"] = max(60.0, float(measured["load_seconds"]) * 1.25)
+        model["seconds_per_query"] = max(4.0, float(measured["probe_query_seconds"]) * 1.25 * 5 / 4)
+    finished_ids = {query["id"] for query in saved_queries}
+    need = max(0, TARGET_SAMPLE - len(finished_ids))
+    plan = choose_plan(rates, cap, need if need else 1, models=(model,))
     record["rates"] = rates
     record["prelaunch_plan"] = {
         "rejected": plan["rejected"],
@@ -330,27 +413,53 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         "shrunk": plan["shrunk"],
     }
     record["estimate_usd"] = plan["estimate_usd"]
-    if plan["model"] is None:
+    if plan["model"] is None and need:
+        record["paused_for_balance"] = True
         record["stop_reason"] = (
-            "Even one query of the cheapest tool-calling model does not fit under "
-            f"remaining credit minus $1 (${cap:.2f}). No GPU job was launched."
+            f"One Qwen2.5-72B query does not fit the live remaining balance (${cap:.2f}). Checkpointed."
         )
-        write_json(RESULT_PATH, record)
-        print(json.dumps({"event": "stop", "reason": record["stop_reason"], "rejected": plan["rejected"]}), flush=True)
+        record["step_down_rejected"] = plan["rejected"]
+        _write_from_saved(record, saved_queries)
         return
 
-    model = plan["model"]
-    record["model"] = model["model_id"]
-    record["revision"] = model["revision"]
-    record["gpu"] = model["gpu"]
-    record["sample_size_planned"] = plan["sample_size"]
+    model = plan["model"] or model
+    record["model"] = "Qwen/Qwen2.5-72B-Instruct"
+    record["weights"] = FRONTIER_72B["model_id"]
+    record["revision"] = FRONTIER_72B["revision"]
+    record["gpu"] = FRONTIER_72B["gpu"]
+    record["quantization"] = "4-bit"
     before_report = today_report()
     seen_ids = {str(row["object_id"]) for row in before_report if row.get("description") == APP_NAME}
+    if local_saved.get("arms"):
+        record["prior_arm_costs"] = {
+            arm: float((local_saved["arms"].get(arm) or {}).get("cost_usd") or 0) for arm in local_saved["arms"]
+        }
 
     dev_ids = load_dev_ids(DEV_IDS)
-    rows = select_rows(load_jsonl(DEV_JSONL), dev_ids, plan["sample_size"], seed=0)
-    row_ids = [row["id"] for row in rows]
-    record["query_ids"] = row_ids
+    pool = select_rows(load_jsonl(DEV_JSONL), dev_ids, TARGET_SAMPLE, seed=0)
+    saved_by_id = {query["id"]: query for query in saved_queries}
+    if need:
+        new_rows = [row for row in pool if row["id"] not in finished_ids][: int(plan["sample_size"] or 0)]
+    else:
+        new_rows = []
+    backfill = [
+        row
+        for row in pool
+        if row["id"] in saved_by_id and not has_arm(saved_by_id[row["id"]], "hosted")
+    ]
+    rows = backfill + new_rows
+    arms_for = {row["id"]: ARM_ORDER for row in new_rows}
+    arms_for.update({row["id"]: ("hosted",) for row in backfill})
+    record["query_ids"] = [row["id"] for row in pool]
+    record["new_query_ids"] = [row["id"] for row in new_rows]
+    record["hosted_backfill_ids"] = [row["id"] for row in backfill]
+    record["sample_size_planned"] = len(rows)
+    record["prior_queries"] = saved_queries
+    if not rows:
+        record["stop_reason"] = ""
+        record["paused_for_balance"] = False
+        _write_from_saved(record, saved_queries)
+        return
     print(
         json.dumps(
             {
@@ -364,11 +473,15 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         flush=True,
     )
     record["launched"] = True
-    prefetch_call = prefetch.spawn(model["model_id"], model["revision"], model["key"])
-    score_call = score_sample.spawn(row_ids)
+    prefetch_call = prefetch.spawn(FRONTIER_72B["model_id"], FRONTIER_72B["revision"], FRONTIER_72B["key"])
+    score_call = score_sample.spawn([row["id"] for row in new_rows]) if new_rows else None
     try:
-        prefetch_result = wait_call(prefetch_call, model["prefetch_minutes"] * 60 + 900, "prefetch")
-        score_result = wait_call(score_call, 900, "score")
+        prefetch_result = wait_call(prefetch_call, FRONTIER_72B["prefetch_minutes"] * 60 + 900, "prefetch")
+        score_result = (
+            wait_call(score_call, 900, "score")
+            if score_call is not None
+            else {"ok": True, "rows": {}, "elapsed_seconds": 0, "gpu_name": ""}
+        )
     except Exception as exc:
         record["stop_reason"] = f"cheap stage failed: {type(exc).__name__}"
         record["error"] = str(exc)[:500]
@@ -394,22 +507,66 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         )
     sunk = _elapsed_cost(prefetch_result, prefetch_hourly(rates, safety=1.0), score_result, score_hour)
     record["sunk_estimate_usd"] = sunk
-    budget_left = cap - sunk
-    gpu_hourly = model_hourly(model, rates, safety=1.0)
-    one_query = (float(model["load_seconds"]) + float(model["seconds_per_query"])) / 3600 * gpu_hourly
+    fresh = live_summary()
+    fresh_remaining = remaining_starter_credit(fresh["metered_cost"], fresh["credits_applied"])
+    posted = max(0.0, remaining - fresh_remaining)
+    unbilled = max(0.0, sunk - posted)
+    budget_left = max(0.0, fresh_remaining - unbilled)
+    record["remaining_credit_before_gpu_usd"] = fresh_remaining
+    record["spend_cap_usd"] = fresh_remaining
+    gpu_hourly = model_hourly(FRONTIER_72B, rates, safety=1.0)
+    one_query = (float(model.get("load_seconds") or 0) + float(model.get("seconds_per_query") or 0)) / 3600 * gpu_hourly
+    print(
+        json.dumps(
+            {
+                "event": "recheck",
+                "remaining_credit_usd": fresh_remaining,
+                "metered_cost_usd": fresh["metered_cost"],
+                "gpu_budget_usd": budget_left,
+                "one_query_estimate_usd": one_query,
+            }
+        ),
+        flush=True,
+    )
     if one_query > budget_left:
+        record["paused_for_balance"] = True
         record["stop_reason"] = (
-            f"After the cheap stage (${sunk:.2f} estimated), one {model['key']} query "
-            f"(${one_query:.2f}) does not fit the remaining buffer (${budget_left:.2f})."
+            f"After the cheap stage, one 72B query (${one_query:.2f}) does not fit the live "
+            f"remaining balance (${fresh_remaining:.2f}). Checkpointed."
         )
         record["estimate_usd"] = sunk + one_query
         _finish_billing(record, seen_ids, None)
-        write_json(RESULT_PATH, record)
+        _write_from_saved(record, saved_queries)
+        return
+    for _ in range(24):
+        if not frontier_containers():
+            break
+        time.sleep(5)
+    if frontier_containers():
+        record["stop_reason"] = "A frontier GPU was still running, so no second GPU was started."
+        _finish_billing(record, seen_ids, None)
+        _write_from_saved(record, saved_queries)
         return
 
     try:
-        tokenizer = load_tokenizer(model["model_id"], model["revision"])
-        prompts = build_prompts(tokenizer, rows, score_result["rows"])
+        hosted_menus, hosted_note = _rank_hosted(rows, hosted_key)
+        record["hosted_jev"] = hosted_note
+        record["hosted_jev_reason"] = hosted_note["reason"]
+        kept = []
+        for row in rows:
+            wanted = tuple(arm for arm in arms_for[row["id"]] if arm != "hosted" or row["id"] in hosted_menus)
+            if not wanted:
+                continue
+            arms_for[row["id"]] = wanted
+            kept.append(row)
+        rows = kept
+        if not rows:
+            record["stop_reason"] = "Hosted Jev did not return a top-10 menu, so no GPU call was made."
+            _finish_billing(record, seen_ids, None)
+            _write_from_saved(record, saved_queries)
+            return
+        tokenizer = load_tokenizer(FRONTIER_72B["model_id"], FRONTIER_72B["revision"])
+        prompts = build_prompts(tokenizer, rows, score_result["rows"], hosted_menus, arms_for)
     except Exception as exc:
         record["stop_reason"] = f"prompt build failed: {type(exc).__name__}"
         record["error"] = str(exc)[:500]
@@ -428,7 +585,7 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         "revision": model["revision"],
         "model_dir": f"/weights/{model['key']}",
         "gpu": model["gpu"],
-        "sample_size": plan["sample_size"],
+        "sample_size": len(rows),
         "hourly_usd": gpu_hourly,
         "job_cap_usd": job_cap,
     }
@@ -447,7 +604,7 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
     infer_fn = infer.with_options(
         gpu=model["gpu"],
         cpu=float(model["cores"]),
-        memory=int(model["mem_gib"] * 1024),
+        memory=int(float(model["mem_gib"]) * 1024),
         timeout=timeout_s,
     )
     infer_call = infer_fn.spawn(spec)
@@ -465,89 +622,25 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         return
 
     failed_spent = float((inference or {}).get("spent_usd_estimated") or 0)
-    if record.get("infer_error") and failed_spent <= 0:
-        failed_spent = timeout_s / 3600 * gpu_hourly
     record["first_attempt"] = {
-        "model": model["model_id"],
+        "model": FRONTIER_72B["model_id"],
         "error": record.get("infer_error") or (inference or {}).get("error"),
+        "errors": (inference or {}).get("errors"),
         "spent_usd_estimated": failed_spent,
     }
-    later = ()
-    plan2 = choose_plan(
-        rates,
-        cap,
-        full_sample=len(rows),
-        models=later,
-        sunk_usd=sunk + failed_spent,
-        include_filter=False,
-        include_prefetch=True,
-    )
-    if plan2["model"] is None:
-        record["stop_reason"] = (
-            "Frontier inference did not return a scored sample, and no cheaper model "
-            f"fits under the remaining buffer (${cap - sunk - failed_spent:.2f})."
-        )
-        record["estimate_usd"] = sunk + failed_spent
-        record["step_down_rejected"] = plan2["rejected"]
-        _finish_billing(record, seen_ids, inference)
-        write_json(RESULT_PATH, record)
+    record["paused_for_balance"] = True
+    record["stop_reason"] = "72B inference stopped before a scored sample. Checkpointed. No cheaper model was started."
+    partial = merge_queries(saved_queries, (inference or {}).get("queries") or [])
+    _finish_billing(record, seen_ids, inference)
+    if partial:
+        record["prior_queries"] = []
+        inference_partial = dict(inference or {})
+        inference_partial["queries"] = partial
+        inference_partial["arm_seconds"] = (inference or {}).get("arm_seconds") or {}
+        inference_partial["ok"] = True
+        _write_success(record, inference_partial, score_result, seen_ids)
         return
-    model = plan2["model"]
-    record["model"] = model["model_id"]
-    record["revision"] = model["revision"]
-    record["gpu"] = model["gpu"]
-    record["step_down"] = True
-    record["estimate_usd"] = plan2["estimate_usd"]
-    if plan2["sample_size"] < len(rows):
-        rows = rows[: plan2["sample_size"]]
-    try:
-        prefetch_result = wait_call(
-            prefetch.spawn(model["model_id"], model["revision"], model["key"]),
-            model["prefetch_minutes"] * 60 + 900,
-            "prefetch-step-down",
-        )
-    except Exception as exc:
-        record["stop_reason"] = f"step-down prefetch failed: {type(exc).__name__}"
-        record["error"] = str(exc)[:500]
-        _finish_billing(record, seen_ids, None)
-        write_json(RESULT_PATH, record)
-        return
-    sunk += failed_spent + float(prefetch_result.get("elapsed_seconds") or 0) / 3600 * prefetch_hourly(rates)
-    record["sunk_estimate_usd"] = sunk
-    budget_left = cap - sunk
-    gpu_hourly = model_hourly(model, rates, safety=1.0)
-    one_query = (float(model["load_seconds"]) + float(model["seconds_per_query"])) / 3600 * gpu_hourly
-    if one_query > budget_left or not prefetch_result.get("ok"):
-        record["stop_reason"] = "step-down model does not fit one query under the remaining buffer"
-        record["estimate_usd"] = sunk + one_query
-        _finish_billing(record, seen_ids, None)
-        write_json(RESULT_PATH, record)
-        return
-    try:
-        inference = _spawn_infer(
-            infer,
-            read_saved,
-            results_volume,
-            model,
-            rows,
-            score_result,
-            gpu_hourly,
-            budget_left,
-            record,
-        )
-    except Exception as exc:
-        record["stop_reason"] = f"step-down launch failed: {type(exc).__name__}"
-        record["error"] = str(exc)[:500]
-        _finish_billing(record, seen_ids, None)
-        write_json(RESULT_PATH, record)
-        return
-    if not inference or not inference.get("ok") or not inference.get("queries"):
-        record["stop_reason"] = "step-down inference did not return a scored sample"
-        record["inference_error"] = None if not inference else inference.get("error")
-        _finish_billing(record, seen_ids, inference)
-        write_json(RESULT_PATH, record)
-        return
-    _write_success(record, inference, score_result, seen_ids)
+    _write_from_saved(record, saved_queries)
 
 
 def _model_rank(model: dict) -> int:
@@ -659,8 +752,123 @@ def _poll_cli(seen_ids: set[str]) -> tuple[float | None, dict, list[str]]:
         time.sleep(30)
 
 
+def _container_epoch(container: dict) -> float:
+    raw = str(container.get("start_time") or "")
+    try:
+        return datetime.fromisoformat(raw).timestamp()
+    except ValueError:
+        return 0.0
+
+
+def _menu_from_names(named: list[dict], names: list) -> list[dict]:
+    by_call = {tool["call_name"]: tool for tool in named}
+    by_name = {str(tool.get("name") or ""): tool for tool in named}
+    menu = []
+    for name in names:
+        if isinstance(name, dict):
+            name = name.get("call_name") or name.get("name")
+        tool = by_call.get(name) or by_name.get(str(name))
+        if tool is not None and tool not in menu:
+            menu.append(tool)
+    return menu[:K]
+
+
+def _rank_hosted(rows: list[dict], api_key: str) -> tuple[dict, dict]:
+    menus: dict[str, list] = {}
+    errors = []
+    called = 0
+    cached = _read_json(HOSTED_RANK_PATH).get("rows") or {}
+    for row in rows:
+        named = assign_call_names(row["candidates"])
+        prior = cached.get(row["id"]) if isinstance(cached, dict) else None
+        if isinstance(prior, dict) and prior.get("ok") and prior.get("top"):
+            menu = _menu_from_names(named, prior["top"])
+            if len(menu) >= K:
+                menus[row["id"]] = menu
+                called += 1
+                continue
+        ranked = rank_query(row["query"], named, api_key)
+        called += 1
+        if not ranked.get("ok"):
+            errors.append({"id": row["id"], "status": ranked.get("status"), "error": ranked.get("error") or "failed"})
+            continue
+        by_name = {tool["call_name"]: tool for tool in named}
+        menu = []
+        for item in ranked.get("top") or []:
+            tool = by_name.get(item.get("call_name"))
+            if tool is not None:
+                menu.append(tool)
+        if len(menu) >= K:
+            menus[row["id"]] = menu[:K]
+        else:
+            errors.append({"id": row["id"], "status": ranked.get("status"), "error": "short menu"})
+    note = {
+        "in_design": False,
+        "paused": called == 0 or len(menus) == 0,
+        "called": called > 0,
+        "included_in_graph": False,
+        "queries": called,
+        "ranked": len(menus),
+        "errors": errors[:8],
+        "reason": "" if menus else "Hosted Jev did not return a 10-tool menu.",
+    }
+    return menus, note
+
+
+def _emit_artifacts(record: dict, queries: list[dict], costs: dict) -> None:
+    record["model"] = "Qwen/Qwen2.5-72B-Instruct"
+    record["revision"] = record.get("revision") or FRONTIER_72B["revision"]
+    write_text(TRANSCRIPT_PATH, render_transcripts(queries, record["model"], record["revision"]))
+    points = []
+    for arm in ARM_ORDER:
+        item = (record.get("arms") or {}).get(arm)
+        if not item:
+            continue
+        points.append(
+            {
+                "label": item["label"],
+                "cost_usd": float(item.get("cost_usd") if item.get("cost_usd") is not None else costs.get(arm) or 0),
+                "accuracy": float(item["accuracy"]),
+            }
+        )
+    if points:
+        write_both(points, f"{record['model']}  n={len(queries)}  k=10", GRAPH_REPO, GRAPH_MEDIA)
+    record["graph"] = str(GRAPH_REPO)
+    record["graph_media"] = str(GRAPH_MEDIA)
+    record["transcripts"] = str(TRANSCRIPT_PATH)
+
+
+def _write_from_saved(record: dict, queries: list[dict]) -> None:
+    record["queries"] = queries
+    record["sample_size"] = len(queries)
+    record["model"] = "Qwen/Qwen2.5-72B-Instruct"
+    record["revision"] = record.get("revision") or FRONTIER_72B["revision"]
+    record["paused_for_balance"] = bool(record.get("paused_for_balance") or record.get("stop_reason"))
+    arms = {}
+    for arm in ARM_ORDER:
+        present = [query for query in queries if has_arm(query, "full") and has_arm(query, arm)]
+        if not present:
+            continue
+        arms[arm] = {
+            "label": LABELS[arm],
+            "accuracy": 1.0 if arm == "full" else arm_accuracy(present, arm),
+            "cost_usd": float((record.get("prior_arm_costs") or {}).get(arm) or 0),
+            "n": len(present),
+        }
+    record["arms"] = arms
+    if "hosted" in arms:
+        record["hosted_jev_included"] = True
+    if queries:
+        _emit_artifacts(record, queries, {arm: arms[arm]["cost_usd"] for arm in arms})
+        write_json(RESULT_PATH, record)
+    else:
+        write_json(RESULT_PATH, record)
+    print(json.dumps({"event": "checkpoint", "reason": record.get("stop_reason"), "sample_size": len(queries)}), flush=True)
+
+
 def _write_success(record: dict, inference: dict, score_result: dict, seen_ids: set[str]) -> None:
-    queries = inference["queries"]
+    queries = merge_queries(record.get("prior_queries") or [], inference["queries"])
+    record.pop("prior_queries", None)
     record["sample_size"] = len(queries)
     record["sample_shrunk"] = len(queries) < int(record.get("sample_size_planned") or len(queries))
     record["probe_query_seconds"] = inference.get("probe_query_seconds")
@@ -696,56 +904,57 @@ def _write_success(record: dict, inference: dict, score_result: dict, seen_ids: 
         record["cost_source"] = "rate_estimate_cli_not_posted"
     else:
         record["cost_source"] = "modal_billing_report"
-    record["spend_usd"] = cli_usd
+    prior_spend = float(record.get("prior_spend_usd") or 0)
+    record["this_app_spend_usd"] = cli_usd
+    record["spend_usd"] = cli_usd + prior_spend
     record["cli_breakdown_usd"] = breakdown
     record["app_ids"] = app_ids
     if app_ids:
         record["app_url"] = f"https://modal.com/apps/fostercole/main/{app_ids[0]}"
-    record["weights"] = record.get("model")
-    if isinstance(record.get("weights"), str) and "72B" in record["weights"]:
-        record["model"] = "Qwen/Qwen2.5-72B-Instruct"
-        record["quantization"] = "4-bit"
+    record["weights"] = FRONTIER_72B["model_id"]
+    record["model"] = "Qwen/Qwen2.5-72B-Instruct"
+    record["revision"] = record.get("revision") or FRONTIER_72B["revision"]
+    record["vllm_quantization"] = inference.get("quantization")
+    record["quantization"] = "4-bit"
     record["stopped_at_credit_wall"] = (inference.get("stop_reason") or "") in {
         "stopped_before_cap",
         "shrunk_after_probe",
         "partial_query",
         "time_backstop",
     }
-    costs = allocate_arm_costs(cli_usd, inference["arm_seconds"])
+    if record["stopped_at_credit_wall"] or len(queries) < TARGET_SAMPLE:
+        record["paused_for_balance"] = bool(record["stopped_at_credit_wall"])
+    seconds = dict(inference.get("arm_seconds") or {})
+    if not seconds:
+        seconds = {"full": 1.0}
+    new_costs = allocate_arm_costs(cli_usd, seconds)
+    prior_costs = record.get("prior_arm_costs") or {}
+    costs = {arm: float(prior_costs.get(arm) or 0) + float(new_costs.get(arm) or 0) for arm in set(prior_costs) | set(new_costs) | set(ARM_ORDER)}
     arms = {}
     for arm in ARM_ORDER:
+        present = [query for query in queries if has_arm(query, "full") and has_arm(query, arm)]
+        if not present:
+            continue
         arms[arm] = {
             "label": LABELS[arm],
-            "accuracy": 1.0 if arm == "full" else arm_accuracy(queries, arm),
-            "cost_usd": costs[arm],
-            "seconds": inference["arm_seconds"][arm],
+            "accuracy": 1.0 if arm == "full" else arm_accuracy(present, arm),
+            "cost_usd": float(costs.get(arm) or 0),
+            "seconds": float(seconds.get(arm) or 0),
+            "n": len(present),
         }
     record["arms"] = arms
-    record["queries"] = [
-        {
-            "id": query["id"],
-            "arms": {
-                arm: {"called": query["arms"][arm]["called"], "seconds": query["arms"][arm]["seconds"]}
-                for arm in ARM_ORDER
-            },
-        }
-        for query in queries
-    ]
-    record["stop_reason"] = ""
+    if "hosted" in arms:
+        record["hosted_jev_included"] = True
+        record["hosted_jev"]["included_in_graph"] = True
+        record["hosted_jev"]["paused"] = False
+    record["queries"] = queries
+    if record.get("stopped_at_credit_wall") and not record.get("stop_reason"):
+        record["stop_reason"] = "Stopped at the live remaining balance and checkpointed."
+        record["paused_for_balance"] = True
+    elif not record.get("stop_reason"):
+        record["stop_reason"] = ""
     record["launched"] = True
-    write_text(
-        TRANSCRIPT_PATH,
-        render_transcripts(queries, record["model"], record["revision"]),
-    )
-    write_both(
-        [
-            {"label": arms[arm]["label"], "cost_usd": arms[arm]["cost_usd"], "accuracy": arms[arm]["accuracy"]}
-            for arm in ARM_ORDER
-        ],
-        f"{record['model']}  n={len(queries)}  k=10",
-        GRAPH_REPO,
-        GRAPH_MEDIA,
-    )
+    _emit_artifacts(record, queries, costs)
     record["graph"] = str(GRAPH_REPO)
     record["graph_media"] = str(GRAPH_MEDIA)
     record["transcripts"] = str(TRANSCRIPT_PATH)

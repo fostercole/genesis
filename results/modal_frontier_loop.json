@@ -1,0 +1,63 @@
+{
+  "model": "Qwen/Qwen2.5-72B-Instruct",
+  "weights": "Qwen/Qwen2.5-72B-Instruct-AWQ",
+  "revision": "698703eae6604af048a3d2f509995dc302088217",
+  "quantization": "4-bit",
+  "quantization_method": "awq_marlin",
+  "gpu": "H100",
+  "gpu_name": "NVIDIA H100 80GB HBM3",
+  "sample_size": 8,
+  "sample_size_target": 90,
+  "sample_size_planned": 8,
+  "k": 10,
+  "candidate_pool": 50,
+  "pool": "dev BM25 top 50, same queries and same pool for every arm",
+  "stopped_at_credit_wall": true,
+  "stop_reason": "Remaining Starter credit before this launch was $2.98, so the cap was $1.98. The pre-launch estimate of one loaded H100 query was $1.24, which cut the sample from 90 to 8. Those 8 queries finished. Inference itself metered about $0.29.",
+  "spend_usd": 0.31656795331654525,
+  "infer_spent_estimate_usd": 0.29232255559422304,
+  "score_spent_estimate_usd": 0.024245397722322225,
+  "cost_source": "in_job_rate_estimate_cli_not_posted",
+  "cli_app_usd": null,
+  "cli_breakdown_usd": {},
+  "app_id": "ap-zPKUUqLg9jSfeMpiTWiqGU",
+  "app_url": "https://modal.com/apps/fostercole/main/ap-zPKUUqLg9jSfeMpiTWiqGU",
+  "hosted_jev": {
+    "in_design": true,
+    "paused": true,
+    "called": false,
+    "included_in_graph": false,
+    "reason": "The hosted Jev API was not called. The arm stays in the design, is paused, and is omitted from the graph."
+  },
+  "arms": {
+    "full": {
+      "label": "full menu",
+      "accuracy": 1.0,
+      "modal_cost_usd": 0.09292051572396602,
+      "seconds": 54.999087389500026
+    },
+    "bm25": {
+      "label": "keyword search",
+      "accuracy": 0.75,
+      "modal_cost_usd": 0.0759840279712171,
+      "seconds": 44.9744834285
+    },
+    "original": {
+      "label": "original Open-Jev-2B",
+      "accuracy": 0.625,
+      "modal_cost_usd": 0.07426843177145247,
+      "seconds": 43.95903248549998
+    },
+    "tuned": {
+      "label": "tuned 2B",
+      "accuracy": 0.75,
+      "modal_cost_usd": 0.07339497784990964,
+      "seconds": 43.44204042849997
+    }
+  },
+  "second_epoch": false,
+  "official_toolret_test_set": false,
+  "trained": false,
+  "vllm_version": "0.8.5.post1",
+  "load_seconds": 73.15064498199999
+}

@@ -256,7 +256,14 @@ def read_saved() -> dict:
     for name in ("result.json", "partial.json"):
         path = Path("/out") / name
         if path.is_file():
-            return json.loads(path.read_text())
+            payload = json.loads(path.read_text())
+            print("SAVED_JSON_START")
+            print(json.dumps(payload))
+            print("SAVED_JSON_END")
+            return payload
+    print("SAVED_JSON_START")
+    print(json.dumps({"ok": False, "error": "no_saved_result"}))
+    print("SAVED_JSON_END")
     return {"ok": False, "error": "no_saved_result"}
 
 
@@ -281,6 +288,7 @@ def infer(spec: dict) -> dict:
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
+    os.environ["VLLM_USE_V1"] = "0"
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     from frontier_budget import ARM_ORDER, shrink_after_probe
@@ -328,19 +336,31 @@ def infer(spec: dict) -> dict:
             "elapsed_seconds": time.perf_counter() - started,
         }
 
+    from transformers import PreTrainedTokenizerBase
+
+    if not hasattr(PreTrainedTokenizerBase, "all_special_tokens_extended"):
+        PreTrainedTokenizerBase.all_special_tokens_extended = property(lambda self: self.all_special_tokens)
+    try:
+        from transformers.models.qwen2.tokenization_qwen2 import Qwen2Tokenizer
+
+        if not hasattr(Qwen2Tokenizer, "all_special_tokens_extended"):
+            Qwen2Tokenizer.all_special_tokens_extended = property(lambda self: self.all_special_tokens)
+    except Exception:
+        pass
+
     from vllm import LLM, SamplingParams
 
     load_started = time.perf_counter()
     llm = None
     quant_used = ""
     errors = []
-    for quant in ("awq_marlin", "awq"):
+    for quant in ("awq_marlin",):
         try:
             llm = LLM(
                 model=spec["model_dir"],
                 quantization=quant,
                 dtype="float16",
-                max_model_len=8192,
+                max_model_len=6144,
                 gpu_memory_utilization=0.90,
                 enforce_eager=True,
                 tensor_parallel_size=1,
@@ -350,7 +370,9 @@ def infer(spec: dict) -> dict:
             quant_used = quant
             break
         except Exception as exc:
-            errors.append(f"{quant}: {type(exc).__name__}: {exc}")
+            message = f"{quant}: {type(exc).__name__}: {exc}"
+            errors.append(message[:2000])
+            print(json.dumps({"event": "load_error", "quant": quant, "error": message[:1500]}), flush=True)
             llm = None
     if llm is None:
         return {
@@ -381,14 +403,18 @@ def infer(spec: dict) -> dict:
         skip_special_tokens=False,
     )
     queries = []
-    arm_gen = {arm: 0.0 for arm in ARM_ORDER}
+    present_arms = []
+    for item in payload:
+        if item["arm"] not in present_arms:
+            present_arms.append(item["arm"])
+    arm_gen = {arm: 0.0 for arm in present_arms}
     planned = int(spec["sample_size"])
     n_target = planned
     probe_query_seconds = None
     stop_reason = ""
 
     def checkpoint(done_reason: str) -> dict:
-        load_share = load_seconds / len(ARM_ORDER)
+        load_share = load_seconds / max(1, len(present_arms))
         body = {
             "ok": True,
             "model_id": spec["model_id"],
@@ -404,7 +430,7 @@ def infer(spec: dict) -> dict:
             "sample_size_target_after_probe": n_target,
             "stop_reason": done_reason,
             "queries": queries,
-            "arm_seconds": {arm: arm_gen[arm] + load_share for arm in ARM_ORDER},
+            "arm_seconds": {arm: arm_gen[arm] + load_share for arm in present_arms},
             "spent_usd_estimated": spent(),
             "elapsed_seconds": time.perf_counter() - started,
             "load_errors": errors,
@@ -435,6 +461,7 @@ def infer(spec: dict) -> dict:
         arms_out = {}
         query_seconds = 0.0
         query_text = grouped[row_id][0]["query"]
+        expected = [item["arm"] for item in grouped[row_id]]
         incomplete = False
         for item in grouped[row_id]:
             if spent() > job_cap:
@@ -455,7 +482,7 @@ def infer(spec: dict) -> dict:
                 "shown": item["shown"],
                 "prompt_tokens": item["prompt_tokens"],
             }
-        if incomplete or len(arms_out) != len(ARM_ORDER):
+        if incomplete or len(arms_out) != len(expected):
             stop_reason = stop_reason or "partial_query"
             break
         queries.append({"id": row_id, "query": query_text, "arms": arms_out})
