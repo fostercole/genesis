@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 
 _FONTSIZE = 9
+_LABEL_GAP = 8
 _COLORS = (
     "#1f4b99",
     "#d35400",
@@ -93,10 +94,15 @@ def _predicted_box(anchor, dx_pt: float, dy_pt: float, width_px: float, height_p
 
 
 def _annotation_boxes(annotations, renderer):
+    """Text boxes only. Leader lines may cross empty space."""
+    from matplotlib.text import Text
+
     boxes = []
     for ann in annotations:
-        box = ann.get_window_extent(renderer)
-        boxes.append(_padded(box, 2))
+        if renderer is not None:
+            ann._renderer = renderer
+        ann.update_positions(ann._renderer)
+        boxes.append(_padded(Text.get_window_extent(ann), _LABEL_GAP))
     return boxes
 
 
@@ -191,7 +197,7 @@ def draw_labeled_scatter(ax, xs: list[float], ys: list[float], labels: list[obje
         text_h = height + descent
         chosen = None
         for dx_pt, dy_pt in _center_offsets(index, width, text_h, px_per_pt):
-            box = _predicted_box(anchors[index], dx_pt, dy_pt, width, text_h, px_per_pt, pad=4)
+            box = _predicted_box(anchors[index], dx_pt, dy_pt, width, text_h, px_per_pt, pad=_LABEL_GAP)
             if not _inside_figure(box, figure):
                 continue
             if _overlaps(box, obstacles) or _overlaps(box, placed):

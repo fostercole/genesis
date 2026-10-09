@@ -19,11 +19,18 @@ def _name_artists(ax):
 
 
 def _separated(fig, ax) -> None:
+    from matplotlib.text import Annotation, Text
+
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
     boxes = []
     for artist in _name_artists(ax):
-        box = artist.get_window_extent(renderer)
+        if isinstance(artist, Annotation):
+            artist._renderer = renderer
+            artist.update_positions(renderer)
+            box = Text.get_window_extent(artist)
+        else:
+            box = artist.get_window_extent(renderer)
         boxes.append(box.expanded(1.02, 1.08))
     for index, box in enumerate(boxes):
         for other in boxes[index + 1 :]:
