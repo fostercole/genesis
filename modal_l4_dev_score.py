@@ -193,81 +193,136 @@ def score() -> dict:
     tokenizer = original.tokenizer
     max_length = int(original.max_length)
 
-    def score_slice(begin: int, end: int) -> tuple[list[dict], list[dict]]:
-        original_rows = []
-        tuned_rows = []
+    partial_path = Path("/vol/dev-score/partial.json")
+
+    def save_partial(original_rows: list[dict], tuned_rows: list[dict], estimate: float | None, probe_seconds: float | None) -> None:
+        partial_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "rows_scored": len(original_rows),
+            "estimate_usd": estimate,
+            "probe_score_seconds": probe_seconds,
+            "load_seconds": load_seconds,
+            "original": original_rows,
+            "tuned": tuned_rows,
+        }
+        temporary = partial_path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(payload))
+        temporary.replace(partial_path)
+        run_volume.commit()
+
+    def score_slice(
+        begin: int,
+        end: int,
+        original_rows: list[dict],
+        tuned_rows: list[dict],
+        estimate: float | None,
+        probe_seconds: float | None,
+    ) -> None:
         for index in range(begin, end):
             if spent() >= STOP_USD:
+                save_partial(original_rows, tuned_rows, estimate, probe_seconds)
                 raise RuntimeError("approached_10")
             row = rows[index]
             options, lengths = fit_row(tokenizer, row, max_length)
             original_rows.append(ranks_for_row(row, score_fitted(original, row, options, lengths)))
             if spent() >= STOP_USD:
+                save_partial(original_rows, tuned_rows, estimate, probe_seconds)
                 raise RuntimeError("approached_10")
             tuned_rows.append(ranks_for_row(row, score_fitted(tuned, row, options, lengths)))
-            if (index + 1) % 25 == 0 or index + 1 == end:
+            done = len(original_rows)
+            if done % 25 == 0 or done == end:
                 print(
                     json.dumps(
                         {
                             "event": "progress",
-                            "rows": index + 1,
+                            "rows": done,
                             "spent_usd": spent(),
                             "elapsed_seconds": time.perf_counter() - started,
                         }
                     ),
                     flush=True,
                 )
-        return original_rows, tuned_rows
+            if done % 100 == 0:
+                save_partial(original_rows, tuned_rows, estimate, probe_seconds)
+
+    resumed = None
+    if partial_path.is_file():
+        resumed = json.loads(partial_path.read_text())
+        if (
+            len(resumed.get("original") or []) != int(resumed.get("rows_scored") or -1)
+            or len(resumed.get("tuned") or []) != int(resumed.get("rows_scored") or -1)
+            or resumed["original"][0]["id"] != rows[0]["id"]
+            or resumed["original"][-1]["id"] != rows[int(resumed["rows_scored"]) - 1]["id"]
+        ):
+            raise SystemExit("refusing to resume a partial file that does not match this dev split")
+
+    if resumed and int(resumed["rows_scored"]) >= PROBE_ROWS and float(resumed["estimate_usd"]) <= DEV_SCORE_CAP_USD:
+        original_rows = list(resumed["original"])
+        tuned_rows = list(resumed["tuned"])
+        estimate = float(resumed["estimate_usd"])
+        probe_score_seconds = float(resumed["probe_score_seconds"])
+        print(
+            json.dumps(
+                {
+                    "event": "resume",
+                    "rows": len(original_rows),
+                    "estimate_usd": estimate,
+                    "spent_usd": spent(),
+                }
+            ),
+            flush=True,
+        )
+    else:
+        original_rows = []
+        tuned_rows = []
+        try:
+            score_slice(0, PROBE_ROWS, original_rows, tuned_rows, None, None)
+        except RuntimeError as error:
+            if str(error) != "approached_10":
+                raise
+            return _finish(
+                started,
+                gpu_name,
+                dtype,
+                load_seconds,
+                launched=False,
+                stop_reason="approached_10_during_probe",
+                estimate_usd=None,
+                original_rows=[],
+                tuned_rows=[],
+            )
+        probe_score_seconds = time.perf_counter() - loaded_at
+        estimate = full_pass_estimate_usd(load_seconds, probe_score_seconds, PROBE_ROWS, DEV_ROWS)
+        print(
+            json.dumps(
+                {
+                    "event": "cost_gate",
+                    "probe_rows": PROBE_ROWS,
+                    "load_seconds": load_seconds,
+                    "probe_score_seconds": probe_score_seconds,
+                    "estimate_usd": estimate,
+                    "spent_usd": spent(),
+                }
+            ),
+            flush=True,
+        )
+        if estimate > DEV_SCORE_CAP_USD:
+            return _finish(
+                started,
+                gpu_name,
+                dtype,
+                load_seconds,
+                launched=False,
+                stop_reason="estimate_over_10",
+                estimate_usd=estimate,
+                original_rows=[],
+                tuned_rows=[],
+                probe_score_seconds=probe_score_seconds,
+            )
+        save_partial(original_rows, tuned_rows, estimate, probe_score_seconds)
 
     try:
-        original_probe, tuned_probe = score_slice(0, PROBE_ROWS)
-    except RuntimeError as error:
-        if str(error) != "approached_10":
-            raise
-        return _finish(
-            started,
-            gpu_name,
-            dtype,
-            load_seconds,
-            launched=False,
-            stop_reason="approached_10_during_probe",
-            estimate_usd=None,
-            original_rows=[],
-            tuned_rows=[],
-        )
-    probe_score_seconds = time.perf_counter() - loaded_at
-    estimate = full_pass_estimate_usd(load_seconds, probe_score_seconds, PROBE_ROWS, DEV_ROWS)
-    print(
-        json.dumps(
-            {
-                "event": "cost_gate",
-                "probe_rows": PROBE_ROWS,
-                "load_seconds": load_seconds,
-                "probe_score_seconds": probe_score_seconds,
-                "estimate_usd": estimate,
-                "spent_usd": spent(),
-            }
-        ),
-        flush=True,
-    )
-    if estimate > DEV_SCORE_CAP_USD:
-        return _finish(
-            started,
-            gpu_name,
-            dtype,
-            load_seconds,
-            launched=False,
-            stop_reason="estimate_over_10",
-            estimate_usd=estimate,
-            original_rows=[],
-            tuned_rows=[],
-            probe_score_seconds=probe_score_seconds,
-        )
-
-    original_rows = list(original_probe)
-    tuned_rows = list(tuned_probe)
-    try:
-        original_rest, tuned_rest = score_slice(PROBE_ROWS, DEV_ROWS)
+        score_slice(len(original_rows), DEV_ROWS, original_rows, tuned_rows, estimate, probe_score_seconds)
     except RuntimeError as error:
         if str(error) != "approached_10":
             raise
@@ -284,8 +339,6 @@ def score() -> dict:
             probe_score_seconds=probe_score_seconds,
             partial=True,
         )
-    original_rows.extend(original_rest)
-    tuned_rows.extend(tuned_rest)
     return _finish(
         started,
         gpu_name,
