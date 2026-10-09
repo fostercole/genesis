@@ -58,9 +58,40 @@ def modal_bin() -> str:
     return shutil.which("modal") or str(Path.home() / ".local/bin/modal")
 
 
+def _loads_cli_json(raw: str):
+    text = (raw or "").strip()
+    if not text:
+        raise RuntimeError("modal CLI returned empty output")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        starts = [index for index in (text.find("{"), text.find("[")) if index >= 0]
+        if not starts:
+            raise
+        start = min(starts)
+        end = max(text.rfind("}"), text.rfind("]"))
+        return json.loads(text[start : end + 1])
+
+
 def modal_json(args: list[str]):
-    raw = subprocess.check_output([modal_bin(), *args, "--profile", "fostercole"], text=True)
-    return json.loads(raw)
+    """Call the Modal CLI. A local entrypoint sometimes races the CLI, so retry."""
+    binary = str(Path.home() / ".local/bin/modal")
+    last_error = "no attempt"
+    for _ in range(4):
+        completed = subprocess.run(
+            [binary, *args, "--profile", "fostercole"],
+            capture_output=True,
+            text=True,
+        )
+        blob = completed.stdout or ""
+        try:
+            if completed.returncode != 0:
+                raise RuntimeError(f"modal exited {completed.returncode}")
+            return _loads_cli_json(blob)
+        except Exception as exc:
+            last_error = f"{type(exc).__name__}: {exc}; stdout_len={len(blob)} stderr_len={len(completed.stderr or '')}"
+            time.sleep(2)
+    raise RuntimeError(f"modal {' '.join(args)} failed: {last_error}")
 
 
 def live_rates() -> dict:
