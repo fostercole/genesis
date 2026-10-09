@@ -19,6 +19,7 @@ from frontier_budget import (
     allocate_arm_costs,
     choose_plan,
     filter_hourly,
+    loaded_hourly,
     may_launch,
     model_hourly,
     prefetch_hourly,
@@ -293,21 +294,22 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         ),
         flush=True,
     )
-    if hosted:
-        record["stop_reason"] = "JEV_API_KEY is non-empty; this driver does not call hosted Jev and did not launch."
-        write_json(RESULT_PATH, record)
-        raise SystemExit(record["stop_reason"])
     record["hosted_jev"] = {
         "in_design": True,
         "paused": True,
         "called": False,
         "included_in_graph": False,
-        "reason": "JEV_API_KEY in /workspace/.env is empty. The hosted Jev arm was not called.",
+        "reason": (
+            "JEV_API_KEY in /workspace/.env is empty. The hosted Jev arm was not called."
+            if not hosted
+            else "The hosted Jev API was not called. The arm stays paused and is omitted from the graph."
+        ),
     }
     record["hosted_jev_reason"] = record["hosted_jev"]["reason"]
+    record["hosted_jev_included"] = False
     if not may_launch(remaining):
         record["stop_reason"] = (
-            f"Remaining Starter credit is ${remaining:.2f}, under $2. No GPU job was launched."
+            f"Remaining Starter credit is ${remaining:.2f}, under $3. No GPU job was launched."
         )
         write_json(RESULT_PATH, record)
         print(json.dumps({"event": "stop", "reason": record["stop_reason"]}), flush=True)
@@ -315,7 +317,6 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
 
     rates = live_rates()
     plan = choose_plan(rates, cap, FULL_SAMPLE)
-    # Aim at 90. The H100 job stops itself when the next query would enter the last dollar.
     if plan["model"] is not None and plan["model"]["key"] == "qwen72b-awq" and plan["one_query_estimate_usd"] <= cap:
         plan["sample_size"] = FULL_SAMPLE
         plan["shrunk"] = False
@@ -332,7 +333,7 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
     if plan["model"] is None:
         record["stop_reason"] = (
             "Even one query of the cheapest tool-calling model does not fit under "
-            f"remaining credit minus $2 (${cap:.2f}). No GPU job was launched."
+            f"remaining credit minus $1 (${cap:.2f}). No GPU job was launched."
         )
         write_json(RESULT_PATH, record)
         print(json.dumps({"event": "stop", "reason": record["stop_reason"], "rejected": plan["rejected"]}), flush=True)
@@ -382,7 +383,16 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         write_json(RESULT_PATH, record)
         return
 
-    sunk = _elapsed_cost(prefetch_result, prefetch_hourly(rates), score_result, filter_hourly(rates))
+    score_hour = filter_hourly(rates, safety=1.0)
+    if "H100" in str(score_result.get("gpu_name") or ""):
+        score_hour = loaded_hourly(
+            rates["gpu_hour_cost_h100"],
+            8,
+            32,
+            rates["cpu_hour_cost"],
+            rates["mem_gib_hour_cost"],
+        )
+    sunk = _elapsed_cost(prefetch_result, prefetch_hourly(rates, safety=1.0), score_result, score_hour)
     record["sunk_estimate_usd"] = sunk
     budget_left = cap - sunk
     gpu_hourly = model_hourly(model, rates, safety=1.0)

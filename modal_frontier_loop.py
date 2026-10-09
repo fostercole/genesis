@@ -132,10 +132,10 @@ def prefetch(model_id: str, revision: str, model_key: str) -> dict:
 
 @app.function(
     image=score_image,
-    gpu="L4",
+    gpu="H100",
     cpu=8,
     memory=32768,
-    timeout=600,
+    timeout=900,
     scaledown_window=2,
     retries=0,
     volumes={"/cache": hf_volume, "/vol": run_volume},
@@ -162,8 +162,8 @@ def score_sample(row_ids: list[str]) -> dict:
     from toolret_smoke.score_rows import file_sha256
 
     gpu_name = torch.cuda.get_device_name(0)
-    if "L4" not in gpu_name or "L40" in gpu_name:
-        raise SystemExit(f"refusing non-L4 GPU: {gpu_name}")
+    if "H100" not in gpu_name:
+        raise SystemExit(f"refusing non-H100 GPU for the 2B scores: {gpu_name}")
     dtype = "bfloat16" if torch.cuda.is_bf16_supported() else "float16"
     os.environ["JEV_TORCH_DTYPE"] = dtype
 
