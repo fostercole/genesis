@@ -1,1 +1,7 @@
-{"included": false, "reason": "no JEV_API_KEY or similar in the environment"}
+{
+  "included": false,
+  "called": false,
+  "waiting_on": "/workspace/.env",
+  "spend_usd": 0,
+  "reason": "The hosted Jev arm is waiting on /workspace/.env and was not called. The file is present and JEV_API_KEY is empty."
+}
