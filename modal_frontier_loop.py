@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import modal
 
-from modal_l4_dev_score import hf_volume, image as score_image, run_volume
-
 APP_NAME = "toolret-frontier-loop"
 OPEN_JEV_COMMIT = "bd4118882f733574a3250a4b65fe4d884130c08b"
 QWEN_2B_REVISION = "15852e8c16360a2fea060d615a32b45270f8a8fc"
@@ -30,6 +28,41 @@ TUNED_SHA256 = {
 app = modal.App(APP_NAME)
 weights_volume = modal.Volume.from_name("toolret-frontier-weights", create_if_missing=True)
 results_volume = modal.Volume.from_name("toolret-frontier-results", create_if_missing=True)
+hf_volume = modal.Volume.from_name("toolret-t4-scorer-hf", create_if_missing=False)
+run_volume = modal.Volume.from_name("toolret-h100-train", create_if_missing=False)
+
+# Same stack as the finished L4 dev pass, defined here so the container does not
+# import modal_l4_dev_score. That module is not on the image.
+score_image = (
+    modal.Image.debian_slim(python_version="3.11")
+    .apt_install("git")
+    .pip_install("torch==2.8.0", index_url="https://download.pytorch.org/whl/cu128")
+    .pip_install(
+        "transformers==5.10.2",
+        "peft==0.19.1",
+        "accelerate==1.13.0",
+        "safetensors==0.7.0",
+        "huggingface_hub==1.33.0",
+        "einops==0.8.2",
+    )
+    .run_commands(
+        "git clone --filter=blob:none --no-checkout https://github.com/Zefan-Cai/Open-Jev.git /opt/open-jev"
+        " && git -C /opt/open-jev sparse-checkout init --cone"
+        " && git -C /opt/open-jev sparse-checkout set jev pyproject.toml README.md LICENSE"
+        f" && git -C /opt/open-jev checkout {OPEN_JEV_COMMIT}"
+        " && pip install -e /opt/open-jev"
+        " && python -c 'import jev.model'"
+    )
+    .env(
+        {
+            "HF_HOME": "/cache/hf",
+            "HF_HUB_CACHE": "/cache/hf/hub",
+            "TOKENIZERS_PARALLELISM": "false",
+        }
+    )
+    .add_local_python_source("toolret_smoke")
+    .add_local_file("data/dev_bm25_top50.jsonl", "/data/dev_bm25_top50.jsonl")
+)
 
 prefetch_image = (
     modal.Image.debian_slim(python_version="3.11")
@@ -229,7 +262,8 @@ def read_saved() -> dict:
 
 @app.function(
     image=vllm_image,
-    gpu="A100-80GB",
+    gpu="H100",
+    max_containers=1,
     cpu=4,
     memory=65536,
     timeout=1560,
@@ -262,6 +296,8 @@ def infer(spec: dict) -> dict:
         return (time.perf_counter() - started) * hourly / 3600
 
     def gpu_matches(name: str, gpu: str) -> bool:
+        if gpu == "H100":
+            return "H100" in name
         if gpu == "A100-80GB":
             return "A100" in name and "80" in name
         if gpu == "L40S":

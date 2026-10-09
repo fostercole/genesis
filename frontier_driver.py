@@ -6,7 +6,7 @@ import json
 import shutil
 import subprocess
 import time
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from frontier_budget import (
@@ -14,6 +14,7 @@ from frontier_budget import (
     BUFFER_USD,
     FRONTIER_MODELS,
     FULL_SAMPLE,
+    MIN_REMAINING_TO_LAUNCH_USD,
     STARTER_CREDIT_USD,
     allocate_arm_costs,
     choose_plan,
@@ -48,7 +49,7 @@ DEV_JSONL = Path("data/dev_bm25_top50.jsonl")
 DEV_IDS = Path("data/dev_2k.ids")
 LABELS = {
     "full": "full menu",
-    "bm25": "BM25 top 10",
+    "bm25": "keyword search",
     "original": "original Open-Jev-2B top 10",
     "tuned": "tuned 2B top 10",
 }
@@ -94,11 +95,44 @@ def modal_json(args: list[str]):
     raise RuntimeError(f"modal {' '.join(args)} failed: {last_error}")
 
 
+def _billing():
+    """Same workspace billing service the CLI uses. The nested CLI races inside a local entrypoint."""
+    import modal
+
+    return modal.Workspace.from_context().billing
+
+
+def refuse_if_another_frontier(this_app_id: str | None) -> None:
+    """Do not start a second frontier GPU while one from this session is up."""
+    apps = modal_json(["app", "list", "--json"])
+    containers = modal_json(["container", "list", "--json"])
+    others = []
+    for item in apps:
+        if "frontier" not in str(item.get("description") or "").lower():
+            continue
+        if this_app_id and str(item.get("app_id")) == str(this_app_id):
+            continue
+        state = str(item.get("state") or "").lower()
+        if state in {"stopped", "complete", "completed", "cancelled", "canceled", "failed"}:
+            continue
+        others.append(str(item.get("app_id")))
+    busy = []
+    for container in containers:
+        if this_app_id and str(container.get("app_id")) == str(this_app_id):
+            continue
+        blob = json.dumps(container).lower()
+        if "frontier" in blob:
+            busy.append(str(container.get("container_id")))
+    if others or busy:
+        raise SystemExit(f"another frontier run is already active: apps={others} containers={busy}")
+
+
 def live_rates() -> dict:
-    rates = modal_json(["billing", "rates", "--json"])
+    rates = _billing().rates()
     needed = [
         "cpu_hour_cost",
         "mem_gib_hour_cost",
+        "gpu_hour_cost_h100",
         "gpu_hour_cost_l4",
         "gpu_hour_cost_l40s",
         "gpu_hour_cost_a100_80gb",
@@ -110,12 +144,41 @@ def live_rates() -> dict:
 
 
 def live_summary() -> dict:
-    summary = modal_json(["billing", "summary", "--for", "this month", "--json"])
+    summary = _billing().summary("this month")
+    adjustments = {str(key).lower().replace(" ", "_"): value for key, value in summary.adjustments.items()}
     return {
-        "metered_cost": float(summary["metered_cost"]),
-        "credits_applied": abs(float(summary["adjustments"]["credits"])),
-        "billed_cost": float(summary["billed_cost"]),
+        "metered_cost": float(summary.metered_cost),
+        "credits_applied": abs(float(adjustments.get("credits", 0))),
+        "billed_cost": float(summary.billed_cost),
     }
+
+
+def today_report() -> list[dict]:
+    start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    # The report drops a partial trailing interval, so end at the next midnight.
+    rows = []
+    for item in _billing().report(start=start, end=start + timedelta(days=1), resolution="d"):
+        resources = dict(item.cost_by_resource or {})
+        if not resources:
+            rows.append(
+                {
+                    "object_id": item.object_id,
+                    "description": item.description,
+                    "resource": "total",
+                    "cost": float(item.cost),
+                }
+            )
+            continue
+        for resource, cost in resources.items():
+            rows.append(
+                {
+                    "object_id": item.object_id,
+                    "description": item.description,
+                    "resource": resource,
+                    "cost": float(cost),
+                }
+            )
+    return rows
 
 
 def jev_key_nonempty() -> bool:
@@ -234,10 +297,17 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         record["stop_reason"] = "JEV_API_KEY is non-empty; this driver does not call hosted Jev and did not launch."
         write_json(RESULT_PATH, record)
         raise SystemExit(record["stop_reason"])
-    record["hosted_jev_reason"] = "JEV_API_KEY is empty, so the hosted Jev arm was left out."
+    record["hosted_jev"] = {
+        "in_design": True,
+        "paused": True,
+        "called": False,
+        "included_in_graph": False,
+        "reason": "JEV_API_KEY in /workspace/.env is empty. The hosted Jev arm was not called.",
+    }
+    record["hosted_jev_reason"] = record["hosted_jev"]["reason"]
     if not may_launch(remaining):
         record["stop_reason"] = (
-            f"Remaining Starter credit is ${remaining:.2f}, under $3. No GPU job was launched."
+            f"Remaining Starter credit is ${remaining:.2f}, under $2. No GPU job was launched."
         )
         write_json(RESULT_PATH, record)
         print(json.dumps({"event": "stop", "reason": record["stop_reason"]}), flush=True)
@@ -245,6 +315,10 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
 
     rates = live_rates()
     plan = choose_plan(rates, cap, FULL_SAMPLE)
+    # Aim at 90. The H100 job stops itself when the next query would enter the last dollar.
+    if plan["model"] is not None and plan["model"]["key"] == "qwen72b-awq" and plan["one_query_estimate_usd"] <= cap:
+        plan["sample_size"] = FULL_SAMPLE
+        plan["shrunk"] = False
     record["rates"] = rates
     record["prelaunch_plan"] = {
         "rejected": plan["rejected"],
@@ -269,7 +343,7 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
     record["revision"] = model["revision"]
     record["gpu"] = model["gpu"]
     record["sample_size_planned"] = plan["sample_size"]
-    before_report = modal_json(["billing", "report", "--for", "today", "--show-resources", "--json"])
+    before_report = today_report()
     seen_ids = {str(row["object_id"]) for row in before_report if row.get("description") == APP_NAME}
 
     dev_ids = load_dev_ids(DEV_IDS)
@@ -346,7 +420,7 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         "gpu": model["gpu"],
         "sample_size": plan["sample_size"],
         "hourly_usd": gpu_hourly,
-        "job_cap_usd": job_cap * 0.95,
+        "job_cap_usd": job_cap,
     }
     print(
         json.dumps(
@@ -388,7 +462,7 @@ def execute(prefetch, score_sample, infer, read_saved, results_volume) -> None:
         "error": record.get("infer_error") or (inference or {}).get("error"),
         "spent_usd_estimated": failed_spent,
     }
-    later = tuple(item for item in FRONTIER_MODELS if item["key"] != model["key"] and _model_rank(item) > _model_rank(model))
+    later = ()
     plan2 = choose_plan(
         rates,
         cap,
@@ -485,7 +559,7 @@ def _spawn_infer(infer, read_saved, results_volume, model, rows, score_result, g
         "gpu": model["gpu"],
         "sample_size": len(rows),
         "hourly_usd": gpu_hourly,
-        "job_cap_usd": budget_left * 0.95,
+        "job_cap_usd": budget_left,
     }
     print(
         json.dumps(
@@ -557,7 +631,7 @@ def _poll_cli(seen_ids: set[str]) -> tuple[float | None, dict, list[str]]:
     stable: tuple[float, dict, list[str]] | None = None
     repeats = 0
     while True:
-        report = modal_json(["billing", "report", "--for", "today", "--show-resources", "--json"])
+        report = today_report()
         rows = app_lines(report, APP_NAME, seen_ids)
         if rows:
             current = sum_lines(rows)
@@ -615,6 +689,18 @@ def _write_success(record: dict, inference: dict, score_result: dict, seen_ids: 
     record["spend_usd"] = cli_usd
     record["cli_breakdown_usd"] = breakdown
     record["app_ids"] = app_ids
+    if app_ids:
+        record["app_url"] = f"https://modal.com/apps/fostercole/main/{app_ids[0]}"
+    record["weights"] = record.get("model")
+    if isinstance(record.get("weights"), str) and "72B" in record["weights"]:
+        record["model"] = "Qwen/Qwen2.5-72B-Instruct"
+        record["quantization"] = "4-bit"
+    record["stopped_at_credit_wall"] = (inference.get("stop_reason") or "") in {
+        "stopped_before_cap",
+        "shrunk_after_probe",
+        "partial_query",
+        "time_backstop",
+    }
     costs = allocate_arm_costs(cli_usd, inference["arm_seconds"])
     arms = {}
     for arm in ARM_ORDER:

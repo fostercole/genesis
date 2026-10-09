@@ -58,16 +58,17 @@ class FrontierBudgetTests(unittest.TestCase):
         remaining = remaining_starter_credit(26.13415649, -26.12)
         self.assertAlmostEqual(remaining, 30 - 26.13415649, places=6)
         self.assertTrue(may_launch(remaining))
-        self.assertFalse(may_launch(2.99))
-        self.assertTrue(may_launch(3))
-        self.assertAlmostEqual(spend_cap(remaining), remaining - 2, places=6)
+        self.assertFalse(may_launch(1.99))
+        self.assertTrue(may_launch(2))
+        self.assertAlmostEqual(spend_cap(remaining), remaining - 1, places=6)
 
     def test_full_sample_shrinks_before_a_cheaper_model(self):
-        plan = choose_plan(RATES, spend_cap_usd=1.87, full_sample=30)
+        plan = choose_plan(RATES, spend_cap_usd=0.9, full_sample=30)
         self.assertEqual(plan["model"]["key"], "qwen72b-awq")
+        self.assertEqual(plan["model"]["gpu"], "H100")
         self.assertLess(plan["sample_size"], 30)
         self.assertGreaterEqual(plan["sample_size"], 1)
-        self.assertLessEqual(plan["estimate_usd"], 1.87)
+        self.assertLessEqual(plan["estimate_usd"], 0.9)
         self.assertTrue(plan["shrunk"])
 
     def test_one_query_over_cap_steps_down(self):

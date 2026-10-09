@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 STARTER_CREDIT_USD = 30.0
-BUFFER_USD = 2.0
-MIN_REMAINING_TO_LAUNCH_USD = 3.0
-FULL_SAMPLE = 30
+BUFFER_USD = 1.0
+MIN_REMAINING_TO_LAUNCH_USD = 2.0
+FULL_SAMPLE = 90
 # Published-rate estimates are padded because the probe has not run yet.
 RATE_SAFETY = 1.05
 
@@ -16,14 +16,14 @@ FRONTIER_MODELS = (
         "key": "qwen72b-awq",
         "model_id": "Qwen/Qwen2.5-72B-Instruct-AWQ",
         "revision": "698703eae6604af048a3d2f509995dc302088217",
-        "gpu": "A100-80GB",
-        "rate_key": "gpu_hour_cost_a100_80gb",
-        "cores": 4,
-        "mem_gib": 64,
-        "load_seconds": 900,
-        "seconds_per_query": 45,
-        "prefetch_minutes": 25,
-        "timeout_seconds": 1560,
+        "gpu": "H100",
+        "rate_key": "gpu_hour_cost_h100",
+        "cores": 8,
+        "mem_gib": 48,
+        "load_seconds": 240,
+        "seconds_per_query": 20,
+        "prefetch_minutes": 20,
+        "timeout_seconds": 2400,
     },
     {
         "key": "qwen32b-awq",
