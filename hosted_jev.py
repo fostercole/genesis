@@ -70,6 +70,25 @@ def rank_indices(answer: dict[str, Any], n_tools: int) -> list[int]:
     return sorted(range(n_tools), key=lambda index: (-_probability(probabilities, index), index))
 
 
+def menu_order(answer: dict[str, Any], n_tools: int) -> tuple[list[int], str]:
+    """Best-first indexes for the tools the API actually scored.
+
+    A probability entry is a rank. Missing entries stay unranked, so a partial
+    map is not filled in with menu order. A choice and no probabilities is
+    that one tool at rank 1.
+    """
+    probabilities = answer.get("probabilities") if isinstance(answer, dict) else None
+    if isinstance(probabilities, dict) and probabilities:
+        present = [index for index in range(n_tools) if option_key(index) in probabilities]
+        if present:
+            ranked = sorted(present, key=lambda index: (-_probability(probabilities, index), index))
+            return ranked, "probabilities"
+    chosen = choice_index(answer, n_tools)
+    if chosen is None:
+        return [], "empty"
+    return [chosen], "choice_only"
+
+
 def choice_index(answer: dict[str, Any], n_tools: int) -> int | None:
     if not isinstance(answer, dict):
         return None
@@ -172,14 +191,19 @@ def rank_query(
         last_status = status
         if status == 200:
             answer = (payload.get("answers") or {}).get("tool") or {}
+            if not isinstance(answer, dict):
+                answer = {}
             usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
+            order, ranking = menu_order(answer, len(tools))
             top = [tools[index] for index in top_indices(answer, len(tools), K)]
             return {
                 "ok": True,
                 "status": status,
                 "called": called_call_name(tools, answer),
-                "choice": answer.get("choice") if isinstance(answer, dict) else None,
-                "confidence": answer.get("confidence") if isinstance(answer, dict) else None,
+                "choice": answer.get("choice"),
+                "confidence": answer.get("confidence"),
+                "order": order,
+                "ranking": ranking,
                 "top": [
                     {
                         "call_name": tool.get("call_name"),
@@ -205,6 +229,8 @@ def rank_query(
         "ok": False,
         "status": last_status,
         "called": None,
+        "order": [],
+        "ranking": "empty",
         "top": [],
         "seconds": time.perf_counter() - started,
         "error": last_error or f"http {last_status}",

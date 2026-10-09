@@ -8,6 +8,7 @@ from hosted_jev import (
     HOSTED_LABEL,
     build_choice_body,
     called_call_name,
+    menu_order,
     rank_indices,
     rank_query,
     redact,
@@ -57,6 +58,16 @@ class HostedJevTests(unittest.TestCase):
         answer = {"probabilities": {"t00": 0.2, "t01": 0.5, "t02": 0.5, "t03": 0.0}}
         self.assertEqual(rank_indices(answer, 4), [1, 2, 0, 3])
 
+    def test_partial_probabilities_do_not_fill_the_rest_of_the_menu(self):
+        order, kind = menu_order({"choice": "t00", "probabilities": {"t01": 0.9, "t03": 0.2}}, 5)
+        self.assertEqual(kind, "probabilities")
+        self.assertEqual(order, [1, 3])
+
+    def test_choice_without_probabilities_is_a_single_rank(self):
+        order, kind = menu_order({"choice": "t02", "probabilities": {}}, 4)
+        self.assertEqual(kind, "choice_only")
+        self.assertEqual(order, [2])
+
     def test_top_ten_keeps_the_api_choice_first(self):
         tools = _tools(12)
         probabilities = {f"t{index:02d}": 0.01 * index for index in range(12)}
@@ -94,6 +105,8 @@ class HostedJevTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["called"], "tool_2")
         self.assertEqual(result["top"][0]["call_name"], "tool_2")
+        self.assertEqual(result["order"], [2, 1, 0])
+        self.assertEqual(result["ranking"], "probabilities")
         self.assertEqual(result["input_tokens"], 30)
         blob = json.dumps(result)
         self.assertNotIn(secret, blob)

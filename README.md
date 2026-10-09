@@ -26,6 +26,8 @@ Results land in `results/t4_scorer_smoke.json`. After a paid run, append a line 
 
 The image keeps `torch==2.8.0` from the cu128 index, then installs `triton==3.7.1` with `--no-deps`. Torch's own pin is Triton 3.4.0, and flash-linear-attention 0.5.2 refuses that range on Hopper inside `chunk_bwd_dqkwg`.
 
+Hosted Jev on that same 2,000-row list is `results/hosted_jev_dev.md`. The original and tuned numbers in that table are copied from `results/dev_bm25_top50.json`. `score_hosted_jev_dev.py` calls the hosted API and does not start a GPU.
+
 ```bash
 python materialize_train_50k.py
 modal run modal_h100_train.py
