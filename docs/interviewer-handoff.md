@@ -80,7 +80,7 @@ Starting checkpoint: the released **Open-Jev-2B** adapter and scalar head. One e
 | Train / dev | **50,000** train rows / **2,000** held out from **ToolRet-train**. Official ToolRet **test was not touched**. |
 | Steps | **3,125** optimizer steps. Effective batch **16** (50,000 / 16). That is one epoch. |
 | Learning rate | Base and head **1e-4**. Warmup **94** steps (3% of 3,125), then linear decay. |
-| First stage | **BM25 top 50**. Same lists for the original 2B, the tuned 2B, and hosted Jev. |
+| First stage | Same **50-candidate** lists for the original 2B, the tuned 2B, and hosted Jev. BM25 fills the non-gold slots. Every labeled positive is kept: **2,053 / 4,230** were already in the BM25 ranking, **2,177 were injected**, and **0** were left outside the 50. |
 | Operating point | **k = 10**, locked on **dev completeness**. |
 | GPU | One **NVIDIA H100 80GB HBM3**. The train function refuses any other GPU name. |
 | App | https://modal.com/apps/fostercole/main/ap-laB3YZqG43nsGSdRH1iOyS |
@@ -106,10 +106,10 @@ Do not answer “what’s the accuracy?” with one number.
 
 | Eval | Question it answers | What it does not answer |
 | --- | --- | --- |
-| Dev retrieval on 2,000 BM25 top-50 rows | Did the **ToolRet labels** rise inside that 50? | Did an agent call them? |
+| Dev retrieval on 2,000 rows, 50 candidates | Did the **ToolRet labels** rise inside that 50? Every gold was already in the list. | Did an agent call them? |
 | 87-query frontier agreement | Did the short menu still produce the **same call** as Qwen2.5-72B-Instruct on the full menu? | Whether the 72B was right. Whether ToolRet labels are Klaviyo tools. |
 
-The full menu in the 87-query loop is the **same BM25 top 50**, not the whole ToolRet catalog. Filter arms keep **10** of those 50. The 72B never saw every tool in the corpus.
+The full menu in the 87-query loop is that **same 50-candidate list**, not the whole ToolRet catalog. The list keeps every labeled positive and fills the rest from BM25. Filter arms keep **10** of those 50. The 72B never saw every tool in the corpus.
 
 ### Dev retrieval (ToolRet labels)
 
@@ -174,10 +174,10 @@ Lead with these if they ask what is wrong.
 - **Small frontier n.** 87 queries. Hosted 57, tuned 55. That is two queries. It is not a stable ranking of the two systems. The sample was not pre-registered at 87. It grew 8, then 76, then 11 more, and stopped.
 - **Two different questions.** The tuned 2B wins the label-ranking table and loses the call-agreement table. Quoting only nDCG@10 0.6878 answers a different question from 55/87. Name the ground truth every time.
 - **Credit wall.** The 87-query job stopped because Starter credit was about **$0.06** from gone (`paused_for_balance`, remaining **0.0565**). It did not stop because the comparison was finished. Another GPU was not started. Posted frontier spend about **$2.261** against a month meter of **$29.94** and **$0** billed. The in-job train estimate (~$17.07) and the archived train meter ($16.86) are earlier lines inside that month, not extra frontier cost.
-- **Label and chart churn.** There was an 8-query chart and a 76-query chart before this one. Labels overlapped and were pulled apart (commit `c809e8e` on the same branch: separate the 76-query labels). On the first 8, hosted Jev was described as the API’s own choice from the 50-tool menu. Cole required top 10 for new queries. The locked file is hosted Jev **top 10 on all 87**. When you point at the figure, the lexical arm is **keyword search**, even though the dev first stage and the candidate pool are BM25.
+- **Label and chart churn.** There was an 8-query chart and a 76-query chart before this one. Labels overlapped and were pulled apart (commit `c809e8e` on the same branch: separate the 76-query labels). On the first 8, hosted Jev was described as the API’s own choice from the 50-tool menu. Cole required top 10 for new queries. The locked file is hosted Jev **top 10 on all 87**. When you point at the figure, the lexical arm is **keyword search**. The candidate pool is the 50-tool list, not a pure BM25 top 50: missed golds were injected before anyone ranked it.
 - **Hosted key.** The hosted arms need `JEV_API_KEY` in `.env`. An early pass paused because that value was empty. Later scoring, including the 2,000-row dev pass and the 87-query arm, ran with the key present. Do not print the key, the file, or the length. Do not commit `.env`.
 - **A100 versus H100.** The posted 87-query comparison is the **H100** AWQ run above. An earlier live frontier app, `ap-jXnsjj4OHb7SyQlK56vRan`, had started inference on an **A100-80GB** and had scored on the order of 14 examples. A still earlier app had scored on the order of 50 and was stopped from the CLI. Those partial runs are not the 87. The training plan itself moved from an L4 to an H100 before the epoch. The finished train and the finished 87 both say H100. Do not attribute the 57/87 or the 55/87 to the A100 app.
-- **BM25 is the ceiling.** If the gold tool is not in the 50, neither 2B can recover it, and completeness on that row is 0.
+- **The 2B does not search the catalog.** On the scored dev lists every labeled positive was kept in the 50. Of 4,230 positives, 2,053 were already in the BM25 ranking and 2,177 were injected; 0 were left outside. Completeness is whether those golds rank into the cut. A positive that still does not fit would be a miss. That did not happen on this file.
 - **Negatives are NV-Embed’s mistakes.** The loss never sees the rest of the catalog. A model can look finished on the stored negatives and still drop a gold tool once the list is BM25’s 50.
 - **ToolRet is not Klaviyo.** Web APIs, functions, and app tools. Composer, Customer Agent, and MCP-style catalogs were not in the training file.
 - **One epoch, seed 0, no sweep.** Whether dev completeness was still climbing at step 3125 was not measured during training. The dev curve was scored after the epoch.
@@ -188,10 +188,10 @@ Lead with these if they ask what is wrong.
 
 1. “A 2B ranks the tools, and a frontier model still makes the call. The 2B does not write a tool name. It scores each candidate with a scalar head, sorts, and cuts at 10.”
 2. “Open-Jev-2B is supervised: soft cross-entropy plus a 0.1 Brier term, then a temperature on a calibration split. My second round is one epoch of QLoRA with per-target negative log-likelihood on ToolRet. That is not RLHF, and it is not TypeSafe’s RLCD. Loop’s 27B OpenJev is a different model.”
-3. “On 2,000 held-out ToolRet-train rows, same BM25 top 50, the tuned 2B leads hosted Jev on every retrieval number: nDCG@10 0.6878 versus 0.6313 versus 0.4985 for the original, and the same order on recall at 3, 5, and 10, completeness at 3, 5, and 10, and top-1. That table is ToolRet labels. The official test set is still sealed.”
+3. “On 2,000 held-out ToolRet-train rows, same 50-candidate lists, the tuned 2B leads hosted Jev on every retrieval number: nDCG@10 0.6878 versus 0.6313 versus 0.4985 for the original, and the same order on recall at 3, 5, and 10, completeness at 3, 5, and 10, and top-1. Every labeled tool was already in that 50. That table is ToolRet labels. The official test set is still sealed.”
 4. “On 87 queries the ground truth is what Qwen2.5-72B-Instruct called on the full menu. Hosted Jev’s top 10 matched that call on 57. My tuned 2B matched on 55. Keyword search matched on 52. The original 2B matched on 48. The full menu matches itself on 87. Hosted is ahead. I would not sell a two-query gap.”
-5. “Those are different questions. The dev table asks whether the labeled tools rose inside BM25’s 50. The 87-query table asks whether cutting the menu to 10 still produced the same call. On the filter arms the same 72B picks again. Hosted Jev is the API’s own pick, compared with the 72B’s full-menu name.”
-6. “Not measured: Claude, latency, Voyage, the official test. The 87 stopped because the Starter credit was about six cents from gone. One epoch, seed 0, no sweep. If BM25 never retrieved the tool, the 2B cannot put it back.”
+5. “Those are different questions. The dev table asks whether the labeled tools rose inside a 50 that already contained every gold. The 87-query table asks whether cutting the menu to 10 still produced the same call. On the filter arms the same 72B picks again. Hosted Jev is the API’s own pick, compared with the 72B’s full-menu name.”
+6. “Not measured: Claude, latency, Voyage, the official test. The 87 stopped because the Starter credit was about six cents from gone. One epoch, seed 0, no sweep. The 2B never sees the rest of the catalog. On these dev lists, a gold BM25 missed was still placed in the 50 before scoring: 2,177 positives were injected, and none were left outside.”
 
 Line 4 is the 87-query result. Do not let line 3 stand in for it.
 
