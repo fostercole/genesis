@@ -41,10 +41,21 @@ If this Mac is not authenticated, run the first command and complete Modal login
 Then download the recorded tuned output. Do this once:
 
 ```bash
-mkdir -p checkpoints
 .venv-dogfood/bin/modal volume ls toolret-h100-train pass1/final
-.venv-dogfood/bin/modal volume get toolret-h100-train pass1/final checkpoints/genesis
+(
+  set -e
+  mkdir -p checkpoints/genesis/adapter
+  for file in model.json head.pt adapter/adapter_config.json adapter/adapter_model.safetensors; do
+    .venv-dogfood/bin/modal volume get --force \
+      toolret-h100-train "pass1/final/$file" "checkpoints/genesis/$file"
+  done
+)
 ```
+
+Download each file to an explicit filename. This avoids Modal's recursive
+directory-download path handling, which can treat a new destination directory
+as a filename or add an unexpected `final/` level. The `--force` option replaces
+only the four named checkpoint files. The subshell stops at the first failure.
 
 The directory must directly contain `model.json`, `head.pt`, and `adapter/`.
 `adapter/` must contain `adapter_config.json` and `adapter_model.safetensors`.
