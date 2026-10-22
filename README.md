@@ -2,6 +2,11 @@
 
 A 2B scorer keeps a short tool list before a frontier agent sees the menu. The study design is in [docs/tool-filter-research-plan.md](docs/tool-filter-research-plan.md). Training is QLoRA on a Modal H100.
 
+## Dogfood locally with Pi
+
+See [dogfood/README.md](dogfood/README.md) for the M1 16 GB setup and Pi 0.85.1 extension.
+It loads the tuned checkpoint locally, starts in shadow mode, and supports optional top-10 filtering.
+
 ## T4 scorer smoke
 
 The smoke loads the released Open-Jev-2B checkpoint on a Modal T4 and scores 32 dev rows twice. It checks that the two runs match and that a higher score sorts earlier. It does not train.
@@ -30,3 +35,4 @@ The image keeps `torch==2.8.0` from the cu128 index, then installs `triton==3.7.
 python materialize_train_50k.py
 modal run modal_h100_train.py
 ```
+
