@@ -1,0 +1,9 @@
+# No CUDA, bitsandbytes, Triton, or flash-linear-attention on this path.
+torch==2.8.0
+transformers==5.10.2
+peft==0.19.1
+accelerate==1.13.0
+safetensors==0.7.0
+huggingface_hub==1.33.0
+einops==0.8.2
+modal
